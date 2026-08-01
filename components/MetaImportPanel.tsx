@@ -27,6 +27,25 @@ type ImportResponse = Omit<IntakeFormState, "images"> & {
 const btn =
   "inline-flex items-center justify-center border border-ink-700 px-4 py-2 font-display text-xs tracking-wide uppercase transition hover:border-meta hover:text-meta-bright disabled:cursor-not-allowed disabled:opacity-50";
 
+const ACCOUNT_STORAGE_KEY = "andromeda.meta.accountId";
+
+function readStoredAccountId() {
+  try {
+    return localStorage.getItem(ACCOUNT_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredAccountId(id: string) {
+  try {
+    if (id) localStorage.setItem(ACCOUNT_STORAGE_KEY, id);
+    else localStorage.removeItem(ACCOUNT_STORAGE_KEY);
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
 export function MetaImportPanel({
   form,
   onChange,
@@ -60,7 +79,10 @@ export function MetaImportPanel({
         if (cancelled) return;
         setConnected(status.connected);
         if (urlError) setError(urlError);
-        if (!status.connected) return;
+        if (!status.connected) {
+          writeStoredAccountId("");
+          return;
+        }
 
         const data = (await (await fetch("/api/meta/accounts")).json()) as {
           accounts?: AdAccount[];
@@ -68,7 +90,17 @@ export function MetaImportPanel({
         };
         if (cancelled) return;
         if (data.error) setError(data.error);
-        setAccounts(data.accounts ?? []);
+        const list = data.accounts ?? [];
+        setAccounts(list);
+
+        const saved = readStoredAccountId();
+        const restore =
+          saved && list.some((a) => a.id === saved)
+            ? saved
+            : list.length === 1
+              ? list[0].id
+              : "";
+        if (restore) await loadAds(restore);
       } catch {
         if (cancelled) return;
         setConnected(false);
@@ -79,12 +111,15 @@ export function MetaImportPanel({
     return () => {
       cancelled = true;
     };
+    // loadAds is stable enough for mount restore; intentional once-on-mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadingAccounts = connected === true && !accounts.length && !error;
 
   async function loadAds(id: string) {
     setAccountId(id);
+    writeStoredAccountId(id);
     setAds([]);
     if (!id) return;
     setBusy("ads");
@@ -164,7 +199,11 @@ export function MetaImportPanel({
         {/* Route handlers, not pages — <Link> client nav would break the OAuth redirect. */}
         {/* eslint-disable @next/next/no-html-link-for-pages */}
         {connected === null ? null : connected ? (
-          <a className={btn} href="/api/meta/logout">
+          <a
+            className={btn}
+            href="/api/meta/logout"
+            onClick={() => writeStoredAccountId("")}
+          >
             Disconnect
           </a>
         ) : (
