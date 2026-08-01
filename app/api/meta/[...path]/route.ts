@@ -5,14 +5,14 @@ import {
   INSIGHT_FIELDS,
   type Json,
   SESSION_COOKIE,
-  STATE_COOKIE,
+  createOAuthState,
   exchangeCode,
   graph,
   loginUrl,
   mapAdToIntake,
-  newState,
   openSession,
   sealSession,
+  verifyOAuthState,
 } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
@@ -50,10 +50,7 @@ export async function GET(
   try {
     switch (action) {
       case "login": {
-        const state = newState();
-        const res = NextResponse.redirect(loginUrl(req, state));
-        res.cookies.set(STATE_COOKIE, state, { ...cookieOpts, maxAge: 600 });
-        return res;
+        return NextResponse.redirect(loginUrl(req, createOAuthState()));
       }
 
       case "callback": {
@@ -61,11 +58,13 @@ export async function GET(
         const error = url.searchParams.get("error_description");
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
-        const expected = req.cookies.get(STATE_COOKIE)?.value;
 
         if (error) return fail(req, error);
-        if (!code || !state || state !== expected) {
-          return fail(req, "OAuth state mismatch. Try connecting again.");
+        if (!code || !verifyOAuthState(state)) {
+          return fail(
+            req,
+            "OAuth session expired or invalid. Click Connect Meta again.",
+          );
         }
 
         const { token: fresh, expiresIn } = await exchangeCode(req, code);
@@ -74,7 +73,6 @@ export async function GET(
           ...cookieOpts,
           maxAge: expiresIn,
         });
-        res.cookies.delete(STATE_COOKIE);
         return res;
       }
 

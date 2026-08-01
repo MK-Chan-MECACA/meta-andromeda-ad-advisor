@@ -45,9 +45,14 @@ export function MetaImportPanel({
     let cancelled = false;
 
     void (async () => {
-      const urlError = new URLSearchParams(window.location.search).get(
-        "meta_error",
-      );
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get("meta_error");
+      if (urlError || params.get("meta") === "connected") {
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("meta_error");
+        clean.searchParams.delete("meta");
+        window.history.replaceState({}, "", clean.pathname);
+      }
       try {
         const status = (await (await fetch("/api/meta/status")).json()) as {
           connected: boolean;
