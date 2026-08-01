@@ -161,6 +161,10 @@ export async function GET(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Meta request failed.";
     console.error("[meta]", action, err);
+    // Browser navigations (login/callback) should land back on the UI with a message.
+    if (action === "login" || action === "callback") {
+      return fail(req, message);
+    }
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

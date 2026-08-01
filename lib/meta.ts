@@ -155,7 +155,7 @@ export const AD_DETAIL_FIELDS =
   "campaign{id,name,objective,buying_type,daily_budget,lifetime_budget}";
 
 export const INSIGHT_FIELDS =
-  "spend,ctr,cpc,frequency,impressions,reach,cost_per_result,quality_ranking,engagement_rate_ranking,conversion_rate_ranking";
+  "spend,ctr,cpc,frequency,impressions,reach,cost_per_action_type,cost_per_result,quality_ranking,engagement_rate_ranking,conversion_rate_ranking";
 
 const money = (minor?: string | number, currency = "") =>
   minor == null ? "" : `${currency} ${(Number(minor) / 100).toFixed(2)}`.trim();
@@ -230,6 +230,34 @@ function targetingSummary(t: Json = {}) {
   };
 }
 
+/** Prefer purchase/lead CPA from cost_per_action_type; fall back to cost_per_result. */
+function formatCpa(insights: Json | null, currency: string): string {
+  if (!insights) return "";
+
+  const preferred = [
+    "purchase",
+    "omni_purchase",
+    "lead",
+    "onsite_conversion.lead_grouped",
+    "complete_registration",
+  ];
+
+  const actions: Json[] = insights.cost_per_action_type ?? [];
+  for (const key of preferred) {
+    const hit = actions.find((a) => a?.action_type === key && a?.value != null);
+    if (hit) return `${currency} ${Number(hit.value).toFixed(2)}`.trim();
+  }
+  if (actions[0]?.value != null) {
+    return `${currency} ${Number(actions[0].value).toFixed(2)}`.trim();
+  }
+
+  const result = insights.cost_per_result?.[0];
+  const resultValue = result?.values?.[0]?.value ?? result?.value;
+  return resultValue != null
+    ? `${currency} ${Number(resultValue).toFixed(2)}`.trim()
+    : "";
+}
+
 export function mapAdToIntake(
   ad: Json,
   insights: Json | null,
@@ -286,9 +314,7 @@ export function mapAdToIntake(
       spend: insights?.spend ? `${currency} ${insights.spend}` : "",
       ctr: insights?.ctr ? `${Number(insights.ctr).toFixed(2)}%` : "",
       cpc: insights?.cpc ? `${currency} ${Number(insights.cpc).toFixed(2)}` : "",
-      cpa: insights?.cost_per_result?.[0]?.values?.[0]?.value
-        ? `${currency} ${Number(insights.cost_per_result[0].values[0].value).toFixed(2)}`
-        : "",
+      cpa: formatCpa(insights, currency),
       frequency: insights?.frequency
         ? Number(insights.frequency).toFixed(2)
         : "",

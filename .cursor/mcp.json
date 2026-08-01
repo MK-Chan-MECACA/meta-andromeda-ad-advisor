@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "devtools": {
-      "type": "http",
-      "url": "https://mcp.facebook.com/devtools"
+    "Meta Developer Tools": {
+      "url": "https://mcp.facebook.com/devtools",
+      "type": "http"
     }
   }
 }

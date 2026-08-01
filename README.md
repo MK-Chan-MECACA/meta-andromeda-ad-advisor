@@ -52,7 +52,9 @@ Without live metrics, live performance is marked **Unknown** — the advisor wil
 2. Add products **Facebook Login for Business** + **Marketing API**.
 3. Valid OAuth Redirect URIs:
    - `http://localhost:3000/api/meta/callback`
-   - `https://andromeda.mecaca.global/api/meta/callback`
+   - `http://localhost:3001/api/meta/callback`
+   - `https://meta-andromeda-ad-advisor.vercel.app/api/meta/callback`
+   - `https://andromeda.mecaca.global/api/meta/callback` (custom domain, if used)
 4. Login for Business → **Configurations** → new config: *User access token*, asset *Ad accounts*, permissions `ads_read` + `business_management`. Copy the **Configuration ID**.
 5. Add your Meta user under **App roles** (Admin/Developer/Tester) — in Development mode only roled users can log in.
 
@@ -81,13 +83,13 @@ In Development mode this works for users with an app role. Serving other adverti
 
 This repo is wired to Meta’s official remote [Developer Tools MCP](https://developers.facebook.com/documentation/mcp/devtools-mcp) so Cursor can inspect apps, search docs, check compliance/App Review, and manage webhooks while you build Meta integrations.
 
-Config: [`.cursor/mcp.json`](.cursor/mcp.json) → `https://mcp.facebook.com/devtools`  
+Config: [`.cursor/mcp.json`](.cursor/mcp.json) → server **Meta Developer Tools** → `https://mcp.facebook.com/devtools`  
 Workflow skills (from [facebook/agentic-tools](https://github.com/facebook/agentic-tools)): `api-integration`, `webhook-setup`, `debug-webhooks`, `app-health-check`, `app-review-prep`, `compliance-check`, `api-health`, `search-docs`
 
 ### Connect (one-time)
 
-1. Reload Cursor (or open **Settings → MCP**) and confirm the `devtools` server appears.
-2. Click **Connect** and complete Meta OAuth in the browser.
+1. Reload Cursor (or open **Settings → Tools & Integrations / MCP**) and confirm **Meta Developer Tools** appears.
+2. Click **Needs login / Connect** and complete Meta OAuth in the browser.
 3. On the consent screen, grant access to the apps you need.
    - Prefer **Read** for inspection and docs.
    - Use **Manage** only when you need to create/update/delete webhook subscriptions.
