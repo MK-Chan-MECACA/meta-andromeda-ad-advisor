@@ -13,6 +13,13 @@ function liveLabel(value: AnalysisResult["scorecard"]["livePerformance"]) {
   }
 }
 
+function gradeTone(grade: string) {
+  if (/^[AB]/.test(grade) || grade === "Working") return "text-pass";
+  if (/^[CD]/.test(grade) || grade === "Learning") return "text-warn";
+  if (/^[EF]/.test(grade) || grade === "Not working") return "text-danger";
+  return "text-meta-bright";
+}
+
 export function Scorecard({
   scorecard,
 }: {
@@ -42,8 +49,8 @@ export function Scorecard({
   ];
 
   return (
-    <div className="overflow-hidden border border-ink-700">
-      <div className="hidden grid-cols-[1.2fr_auto_1.6fr] gap-x-4 border-b border-ink-700 bg-ink-900/70 px-4 py-2 text-xs tracking-wide text-ink-400 uppercase md:grid">
+    <div className="overflow-hidden rounded-2xl border border-ink-700 bg-ink-900/40">
+      <div className="hidden grid-cols-[1.2fr_auto_1.6fr] gap-x-4 border-b border-ink-700 bg-ink-900/80 px-5 py-3 text-xs tracking-wide text-ink-400 uppercase md:grid">
         <span>Dimension</span>
         <span>Grade</span>
         <span>Note</span>
@@ -52,10 +59,12 @@ export function Scorecard({
         {rows.map((row) => (
           <li
             key={row.label}
-            className="grid gap-1 border-b border-ink-800 px-4 py-3 last:border-b-0 md:grid-cols-[1.2fr_auto_1.6fr] md:items-start md:gap-x-4"
+            className="grid gap-1 border-b border-ink-800 px-5 py-4 last:border-b-0 md:grid-cols-[1.2fr_auto_1.6fr] md:items-start md:gap-x-4"
           >
-            <span className="text-sm text-ink-200">{row.label}</span>
-            <span className="font-display text-lg text-meta-bright">
+            <span className="text-sm font-medium text-ink-200">{row.label}</span>
+            <span
+              className={`font-display text-lg ${gradeTone(String(row.grade))}`}
+            >
               {row.grade}
             </span>
             <span className="text-sm leading-relaxed text-ink-300">
