@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
+import { IconImage, IconMonitor, IconX } from "@/components/Icons";
 import type { ClientImage, ImageKind } from "@/lib/types";
 import { MAX_IMAGE_BYTES } from "@/lib/analysis-schema";
 
@@ -38,6 +39,7 @@ export function ImageDropzone({
 
   const ofKind = images.filter((img) => img.kind === kind);
   const remaining = maxCount - images.length;
+  const Icon = kind === "creative" ? IconImage : IconMonitor;
 
   const ingestFiles = useCallback(
     async (fileList: FileList | File[]) => {
@@ -76,11 +78,12 @@ export function ImageDropzone({
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
+        <h3 className="flex items-center gap-2 font-display text-sm tracking-wide text-ink-100 uppercase">
+          <Icon className="h-4 w-4 text-meta-bright" aria-hidden />
           {label}
         </h3>
-        <span className="text-xs text-ink-400">
-          {ofKind.length} attached · {Math.max(remaining, 0)} slots left
+        <span className="font-display text-xs text-ink-400 tabular-nums">
+          {ofKind.length} attached · {Math.max(remaining, 0)} left
         </span>
       </div>
 
@@ -97,15 +100,31 @@ export function ImageDropzone({
           void ingestFiles(e.dataTransfer.files);
         }}
         className={[
-          "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-4 py-8 text-center transition",
+          "group flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-8 text-center transition duration-200",
           dragOver
-            ? "border-meta bg-meta/10"
-            : "border-ink-600 bg-ink-900/40 hover:border-ink-400 hover:bg-ink-900/70",
+            ? "border-meta bg-meta/15 shadow-[0_0_32px_rgba(37,99,235,0.2)]"
+            : "border-ink-600 bg-ink-950/50 hover:border-meta/40 hover:bg-ink-900/60",
         ].join(" ")}
       >
-        <span className="font-display text-base text-ink-50">Drop here</span>
-        <span className="max-w-xs text-sm text-ink-300">{hint}</span>
-        <span className="text-xs text-ink-500">or click to browse</span>
+        <span
+          className={[
+            "flex h-12 w-12 items-center justify-center rounded-xl transition duration-200",
+            dragOver
+              ? "bg-meta/25 text-meta-bright"
+              : "bg-ink-800 text-ink-300 group-hover:bg-meta/15 group-hover:text-meta-bright",
+          ].join(" ")}
+        >
+          <Icon className="h-6 w-6" aria-hidden />
+        </span>
+        <span className="font-display text-base text-ink-50">
+          Drop images here
+        </span>
+        <span className="max-w-xs text-sm leading-relaxed text-ink-300">
+          {hint}
+        </span>
+        <span className="rounded-full border border-ink-600 px-3 py-1 text-xs text-ink-400 transition group-hover:border-ink-400 group-hover:text-ink-200">
+          or click to browse
+        </span>
         <input
           id={inputId}
           type="file"
@@ -119,12 +138,19 @@ export function ImageDropzone({
         />
       </label>
 
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       {ofKind.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {ofKind.map((img) => (
-            <li key={img.id} className="group relative overflow-hidden bg-ink-900">
+            <li
+              key={img.id}
+              className="group relative overflow-hidden rounded-xl border border-ink-700 bg-ink-900"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.dataUrl}
@@ -134,11 +160,12 @@ export function ImageDropzone({
               <button
                 type="button"
                 onClick={() => onRemove(img.id)}
-                className="absolute top-2 right-2 bg-ink-950/80 px-2 py-1 text-xs text-ink-50 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"
+                aria-label={`Remove ${img.name}`}
+                className="absolute top-2 right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-ink-950/85 text-ink-50 opacity-100 transition duration-200 hover:bg-danger/90 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                Remove
+                <IconX className="h-4 w-4" aria-hidden />
               </button>
-              <p className="truncate px-2 py-1.5 text-xs text-ink-400">
+              <p className="truncate px-2.5 py-2 text-xs text-ink-400">
                 {img.name}
               </p>
             </li>
