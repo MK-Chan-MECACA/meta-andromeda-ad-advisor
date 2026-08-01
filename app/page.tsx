@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { IntakePanel } from "@/components/IntakePanel";
+import { MetaImportPanel } from "@/components/MetaImportPanel";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import {
@@ -89,6 +90,10 @@ export default function Home() {
             conversion.
           </p>
         </header>
+
+        <div className="animate-rise-delay mb-6">
+          <MetaImportPanel form={form} onChange={setForm} />
+        </div>
 
         <div className="animate-rise-delay border border-ink-700/80 bg-ink-950/55 p-5 backdrop-blur-sm sm:p-8">
           <IntakePanel
