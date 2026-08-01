@@ -2,7 +2,6 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { emptyIntakeForm, type IntakeFormState } from "@/lib/types";
 
 export const SESSION_COOKIE = "meta_session";
-export const STATE_COOKIE = "meta_oauth_state";
 
 const GRAPH_VERSION = process.env.GRAPH_API_VERSION ?? "v25.0";
 const GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -61,7 +60,34 @@ export function openSession(cookie: string | undefined): string | null {
   }
 }
 
-export const newState = () => randomBytes(16).toString("hex");
+/** Self-contained CSRF state — no cookie required (survives Facebook redirects). */
+export function createOAuthState(ttlMs = 10 * 60 * 1000) {
+  const { secret } = metaEnv();
+  const payload = Buffer.from(
+    JSON.stringify({ n: randomBytes(16).toString("hex"), e: Date.now() + ttlMs }),
+  ).toString("base64url");
+  return `${payload}.${sign(payload, secret)}`;
+}
+
+export function verifyOAuthState(state: string | null): boolean {
+  if (!state) return false;
+  const [payload, sig] = state.split(".");
+  if (!payload || !sig) return false;
+
+  const expected = sign(payload, metaEnv().secret);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+
+  try {
+    const { e } = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
+      e?: number;
+    };
+    return typeof e === "number" && e > Date.now();
+  } catch {
+    return false;
+  }
+}
 
 /* ---------- graph ---------- */
 
