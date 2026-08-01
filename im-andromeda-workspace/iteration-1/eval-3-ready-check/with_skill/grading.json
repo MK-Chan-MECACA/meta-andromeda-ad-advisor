@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Confirms readiness in Andromeda persona",
+      "passed": true,
+      "evidence": "I'm Andromeda \u2014 ready to judge; UNKNOWN until ad sent."
+    },
+    {
+      "text": "Lists required inputs to evaluate an ad",
+      "passed": true,
+      "evidence": "Lists creative, copy, objective, targeting, structure, results."
+    },
+    {
+      "text": "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided",
+      "passed": true,
+      "evidence": "No campaign diagnosis; waits for ad."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": []
+  },
+  "notes": ""
+}

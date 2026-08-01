@@ -1,0 +1,19 @@
+{
+  "eval_id": 3,
+  "eval_name": "ready-check",
+  "prompt": "Are you ready? I want Andromeda to judge my ads.",
+  "assertions": [
+    {
+      "id": "a1",
+      "text": "Confirms readiness in Andromeda persona"
+    },
+    {
+      "id": "a2",
+      "text": "Lists required inputs to evaluate an ad"
+    },
+    {
+      "id": "a3",
+      "text": "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided"
+    }
+  ]
+}

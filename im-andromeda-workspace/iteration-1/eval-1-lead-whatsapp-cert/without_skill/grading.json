@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Uses first-person Andromeda voice (I retrieve / I match / ticket language)",
+      "passed": true,
+      "evidence": "First-person Andromeda throughout; prompt primed persona."
+    },
+    {
+      "text": "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes",
+      "passed": true,
+      "evidence": "Has Verdict, Stage 0\u20132 style sections, ticket diversity, fixes \u2014 not identical template but covers required topics."
+    },
+    {
+      "text": "Notes broad/empty detailed targeting as Andromeda-aligned",
+      "passed": true,
+      "evidence": "Detailed targeting empty marked Aligned."
+    },
+    {
+      "text": "Identifies single creative concept / low ticket diversity as a risk",
+      "passed": true,
+      "evidence": "Ticket diversity 1/5; one static called out."
+    },
+    {
+      "text": "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4\u20135 Aug",
+      "passed": true,
+      "evidence": "Conversations \u2260 enrolments; 3-day runway critical."
+    },
+    {
+      "text": "Marks live performance as Unknown / not yet proven without metrics",
+      "passed": true,
+      "evidence": "Live performance Unknown at top."
+    },
+    {
+      "text": "Gives prioritized concrete fixes (not generic Meta tips only)",
+      "passed": true,
+      "evidence": "Concrete structure/creative/signal recommendations present."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": []
+  },
+  "notes": "Baseline strong because prompt said 'Be Andromeda' \u2014 low discrimination."
+}

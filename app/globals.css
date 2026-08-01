@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink-50: #f4f7fb;
+  --color-ink-100: #e4ebf5;
+  --color-ink-200: #c5d0e2;
+  --color-ink-300: #9aabc4;
+  --color-ink-400: #6f829e;
+  --color-ink-500: #52637c;
+  --color-ink-600: #3a475c;
+  --color-ink-700: #2a3446;
+  --color-ink-800: #1b2332;
+  --color-ink-900: #121926;
+  --color-ink-950: #07090e;
+
+  --color-meta: #0668e1;
+  --color-meta-bright: #3b8cff;
+  --color-pass: #3dcf8e;
+  --color-warn: #e6b35c;
+  --color-danger: #ef6b6b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: #07090e;
+    color: var(--color-ink-50);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-meta) 45%, transparent);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility font-display {
+  font-family: var(--font-display);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-rise {
+  animation: rise 0.55s ease-out both;
+}
+
+@utility animate-rise-delay {
+  animation: rise 0.7s ease-out 0.08s both;
 }

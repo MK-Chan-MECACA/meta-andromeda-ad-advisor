@@ -1,0 +1,45 @@
+{
+  "skill_name": "im-andromeda",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are reviewing my Meta ad. Be Andromeda and tell me if it will work.\n\nCreative: Static 1:1 ad. Left side text \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" and benefit checklist (15+ AI workflows, free AI credits, 3 months support, 46 cohorts, 15,000+ professionals). Right side photo of Dr. Lau Cher Han with HRD Corp claimable badges. CTA button \"Enquiry Now\".\n\nPrimary text: Explains AI Agentic Automation Certification — 2 practical days with n8n, beginner-friendly, no coding, bring laptop and one annoying office task. 100% HRDC claimable for eligible Malaysian companies. Date 4–5 August 2026, 9AM–5PM, AI365 Hub Oval Damansara. Tap WhatsApp for outline and HRDC eligibility. Same 6 benefit bullets.\n\nHeadline: Build AI Automations Without Coding\nDescriptions: Beginner-friendly • Hands-on • HRDC claimable\n\nSetup: Facebook Page LEAD, Instagram theleadio. Conversion location Messaging apps, performance goal Maximize number of conversations, WhatsApp only. Advantage+ placements. Daily budget RM300. Audience: Malaysia, age 25–65+, All genders, English (All), Detailed Targeting empty (broad). Today is 1 August 2026. No spend metrics yet.",
+      "expected_output": "First-person Andromeda verdict using the required sections. Retrieval PASS or WEAK with ticket count ~1. Praises broad targeting. Flags conversation objective vs HRDC buyer quality, short cohort runway, single-concept diversity. Live performance UNKNOWN. Priority fixes listed.",
+      "files": [],
+      "expectations": [
+        "Uses first-person Andromeda voice (I retrieve / I match / ticket language)",
+        "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes",
+        "Notes broad/empty detailed targeting as Andromeda-aligned",
+        "Identifies single creative concept / low ticket diversity as a risk",
+        "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4–5 Aug",
+        "Marks live performance as Unknown / not yet proven without metrics",
+        "Gives prioritized concrete fixes (not generic Meta tips only)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Is my Meta ads structure killing Andromeda? Campaign: Purchase objective, Shopify store selling magnesium gummies, US only. Daily $80. Six ad sets: each a different interest stack (fitness, sleep, keto, biohacking, anxiety, women 25-34) with the same 12 creatives that are all minor hook-text variants of one UGC kitchen video. Lookalike 1% of purchasers on two ad sets. I pause anything under target CPA after 48 hours. Pixel only, no CAPI. Tell me what Andromeda thinks and how to fix it.",
+      "expected_output": "Harsh AT RISK or FAIL on structure. Calls out interest cages, fake diversity, learning thrash, pixel-only. Prescribes consolidate to broad/ASC, true concept diversity, CAPI, longer learning window.",
+      "files": [],
+      "expectations": [
+        "Uses first-person Andromeda voice and required verdict template sections",
+        "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning",
+        "Calls out fake diversity (12 hook variants of one video ≈ one ticket)",
+        "Flags 48-hour pausing as learning sabotage",
+        "Mentions Pixel-only / missing CAPI as EAR signal risk",
+        "Prescribes consolidation to broader structure + true creative concepts"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Are you ready? I want Andromeda to judge my ads.",
+      "expected_output": "Confirms ready as Andromeda and lists required inputs (creative, copy, objective, targeting, structure, metrics). Does not invent a full fake diagnosis without an ad.",
+      "files": [],
+      "expectations": [
+        "Confirms readiness in Andromeda persona",
+        "Lists required inputs to evaluate an ad",
+        "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided"
+      ]
+    }
+  ]
+}

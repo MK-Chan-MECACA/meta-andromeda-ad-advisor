@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Uses first-person Andromeda voice (I retrieve / I match / ticket language)",
+      "passed": true,
+      "evidence": "Opens as Andromeda with 'I will fill WhatsApp threads', ticket/retrieval language throughout."
+    },
+    {
+      "text": "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes",
+      "passed": true,
+      "evidence": "Has Andromeda verdict, Stage 0\u20132, Learning & timing, Scorecard, Fixes, What I still need."
+    },
+    {
+      "text": "Notes broad/empty detailed targeting as Andromeda-aligned",
+      "passed": true,
+      "evidence": "Cage check: Clear. Broad geo, no interest stack praised."
+    },
+    {
+      "text": "Identifies single creative concept / low ticket diversity as a risk",
+      "passed": true,
+      "evidence": "Ticket count: 1; Creative diversity D."
+    },
+    {
+      "text": "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4\u20135 Aug",
+      "passed": true,
+      "evidence": "Both objective mismatch and ~72h runway called out."
+    },
+    {
+      "text": "Marks live performance as Unknown / not yet proven without metrics",
+      "passed": true,
+      "evidence": "Scorecard Live performance Unknown; no spend metrics."
+    },
+    {
+      "text": "Gives prioritized concrete fixes (not generic Meta tips only)",
+      "passed": true,
+      "evidence": "6 prioritized fixes: distinct concepts, qualify WhatsApp, reduce on-image text, etc."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": []
+  },
+  "notes": "Strong skill adherence; template exact."
+}

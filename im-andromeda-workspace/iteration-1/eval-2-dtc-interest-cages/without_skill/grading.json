@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Uses first-person Andromeda voice and required verdict template sections",
+      "passed": true,
+      "evidence": "Andromeda verdict FAIL with Stage sections; prompt-primed."
+    },
+    {
+      "text": "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning",
+      "passed": true,
+      "evidence": "Interest cages / retrieval prisons section."
+    },
+    {
+      "text": "Calls out fake diversity (12 hook variants of one video \u2248 one ticket)",
+      "passed": true,
+      "evidence": "~1 ticket; hook-text swaps not diversity."
+    },
+    {
+      "text": "Flags 48-hour pausing as learning sabotage",
+      "passed": true,
+      "evidence": "48h pause called out as learning killer in body."
+    },
+    {
+      "text": "Mentions Pixel-only / missing CAPI as EAR signal risk",
+      "passed": true,
+      "evidence": "CAPI missing marked Critical gap."
+    },
+    {
+      "text": "Prescribes consolidation to broader structure + true creative concepts",
+      "passed": true,
+      "evidence": "Prescribes consolidate + creative diversity."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": []
+  },
+  "notes": "Baseline again strong; assertions pass without skill file."
+}

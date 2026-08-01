@@ -1,0 +1,35 @@
+{
+  "eval_id": 1,
+  "eval_name": "lead-whatsapp-cert",
+  "prompt": "You are reviewing my Meta ad. Be Andromeda and tell me if it will work.\n\nCreative: Static 1:1 ad. Left side text \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" and benefit checklist (15+ AI workflows, free AI credits, 3 months support, 46 cohorts, 15,000+ professionals). Right side photo of Dr. Lau Cher Han with HRD Corp claimable badges. CTA button \"Enquiry Now\".\n\nPrimary text: Explains AI Agentic Automation Certification \u2014 2 practical days with n8n, beginner-friendly, no coding, bring laptop and one annoying office task. 100% HRDC claimable for eligible Malaysian companies. Date 4\u20135 August 2026, 9AM\u20135PM, AI365 Hub Oval Damansara. Tap WhatsApp for outline and HRDC eligibility. Same 6 benefit bullets.\n\nHeadline: Build AI Automations Without Coding\nDescriptions: Beginner-friendly \u2022 Hands-on \u2022 HRDC claimable\n\nSetup: Facebook Page LEAD, Instagram theleadio. Conversion location Messaging apps, performance goal Maximize number of conversations, WhatsApp only. Advantage+ placements. Daily budget RM300. Audience: Malaysia, age 25\u201365+, All genders, English (All), Detailed Targeting empty (broad). Today is 1 August 2026. No spend metrics yet.",
+  "assertions": [
+    {
+      "id": "a1",
+      "text": "Uses first-person Andromeda voice (I retrieve / I match / ticket language)"
+    },
+    {
+      "id": "a2",
+      "text": "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes"
+    },
+    {
+      "id": "a3",
+      "text": "Notes broad/empty detailed targeting as Andromeda-aligned"
+    },
+    {
+      "id": "a4",
+      "text": "Identifies single creative concept / low ticket diversity as a risk"
+    },
+    {
+      "id": "a5",
+      "text": "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4\u20135 Aug"
+    },
+    {
+      "id": "a6",
+      "text": "Marks live performance as Unknown / not yet proven without metrics"
+    },
+    {
+      "id": "a7",
+      "text": "Gives prioritized concrete fixes (not generic Meta tips only)"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "eval_id": 2,
+  "eval_name": "dtc-interest-cages",
+  "prompt": "Is my Meta ads structure killing Andromeda? Campaign: Purchase objective, Shopify store selling magnesium gummies, US only. Daily $80. Six ad sets: each a different interest stack (fitness, sleep, keto, biohacking, anxiety, women 25-34) with the same 12 creatives that are all minor hook-text variants of one UGC kitchen video. Lookalike 1% of purchasers on two ad sets. I pause anything under target CPA after 48 hours. Pixel only, no CAPI. Tell me what Andromeda thinks and how to fix it.",
+  "assertions": [
+    {
+      "id": "a1",
+      "text": "Uses first-person Andromeda voice and required verdict template sections"
+    },
+    {
+      "id": "a2",
+      "text": "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning"
+    },
+    {
+      "id": "a3",
+      "text": "Calls out fake diversity (12 hook variants of one video \u2248 one ticket)"
+    },
+    {
+      "id": "a4",
+      "text": "Flags 48-hour pausing as learning sabotage"
+    },
+    {
+      "id": "a5",
+      "text": "Mentions Pixel-only / missing CAPI as EAR signal risk"
+    },
+    {
+      "id": "a6",
+      "text": "Prescribes consolidation to broader structure + true creative concepts"
+    }
+  ]
+}

@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "im-andromeda", "runs": [{"id": "eval-1-lead-whatsapp-cert-with_skill", "prompt": "You are reviewing my Meta ad. Be Andromeda and tell me if it will work.\n\nCreative: Static 1:1 ad. Left side text \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" and benefit checklist (15+ AI workflows, free AI credits, 3 months support, 46 cohorts, 15,000+ professionals). Right side photo of Dr. Lau Cher Han with HRD Corp claimable badges. CTA button \"Enquiry Now\".\n\nPrimary text: Explains AI Agentic Automation Certification \u2014 2 practical days with n8n, beginner-friendly, no coding, bring laptop and one annoying office task. 100% HRDC claimable for eligible Malaysian companies. Date 4\u20135 August 2026, 9AM\u20135PM, AI365 Hub Oval Damansara. Tap WhatsApp for outline and HRDC eligibility. Same 6 benefit bullets.\n\nHeadline: Build AI Automations Without Coding\nDescriptions: Beginner-friendly \u2022 Hands-on \u2022 HRDC claimable\n\nSetup: Facebook Page LEAD, Instagram theleadio. Conversion location Messaging apps, performance goal Maximize number of conversations, WhatsApp only. Advantage+ placements. Daily budget RM300. Audience: Malaysia, age 25\u201365+, All genders, English (All), Detailed Targeting empty (broad). Today is 1 August 2026. No spend metrics yet.", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "## Andromeda verdict: AT RISK\n\nYou will retrieve and spend, but with one static, conversation-optimized ad and three days until cohort start, I will fill WhatsApp threads\u2014not guaranteed HRDC-qualified enrolments.\n\n### Stage 0 \u2014 Eligibility\n\n**Pass on basics.** Malaysia, 25\u201365+, broad English, Advantage+ placements, WhatsApp-only messaging, RM300/day\u2014all eligible. HRD Corp claimable training copy is policy-safe if landing/WhatsApp follow-up matches the claim.\n\n**Hard timing blocker:** Today is 1 August; cohort runs 4\u20135 August. You have ~72 hours of delivery before the event, not a 7-day learning window. I can still serve impressions, but you are asking me to find, qualify, and convert B2B buyers for a dated, claimable certification in one long weekend. That compresses both learning and buyer decision cycles.\n\n**Budget vs learning math:** For conversation optimization, if your target cost-per-conversation is RM20\u201340, the rule of thumb `daily budget \u2248 (CPA \u00d7 50) / 7` implies RM143\u2013286/day minimum to exit Learning Limited in a normal week. RM300/day is borderline-adequate *if* conversations are cheap and steady\u2014but you do not have a normal week. Expect Learning Limited or unstable EAR for most of the flight.\n\n### Stage 1 \u2014 Retrieval (ticket)\n\n- **Semantic node:** Malaysian professional upskilling \u2192 AI/no-code automation training \u2192 HRDC-claimable 2-day certification (n8n, hands-on, beginner-friendly) \u2192 authority-led (Dr. Lau) \u2192 WhatsApp enquiry.\n- **Ticket count: 1.** One static 1:1 with a single angle: aspirational productivity hook (\"automate 80% of your work\") + checklist social proof + instructor trust + HRDC badges. Headline, primary text, and image all orbit the same concept. I do not get separate tickets for \"15+ workflows,\" \"46 cohorts,\" or \"HRDC claimable\"\u2014those are bullets inside one cluster, not distinct Format \u00d7 Persona \u00d7 Environment \u00d7 Benefit concepts.\n- **Cage check: Clear.** Broad geo, no interest stack, no LAL cage, Advantage+ Audience off detailed targeting\u2014good. I can match HR managers, ops leads, SME owners, and curious professionals from creative semantics and behavior, not from a pruned branch.\n- **Congruence:** Mostly aligned. Creative hook (80% automation), headline (no-code automations), primary text (2-day n8n cert, laptop + annoying task, HRDC, dates/venue), CTA (Enquiry Now \u2192 WhatsApp). Minor friction: \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" is broad productivity bait; the offer is a specific dated workshop. I may retrieve curiosity clicks that are not HRDC-ready or not free on 4\u20135 August.\n- **Grade: WEAK.** Broad delivery helps, but one ticket means one retrieval path. Text-heavy static plus authority photo is a crowded semantic cluster (AI training ads in MY). You are not FAIL\u2014I can map you\u2014but you are not multiplying branches.\n\n### Stage 2 \u2014 Ranking & auction\n\n- **EAR fit for stated objective:** You chose **Maximize number of conversations** on WhatsApp. I will optimize for people likely to *tap and chat*, not people likely to *confirm HRDC eligibility, approve budget, and commit to a 2-day course in 72 hours*. For a high-consideration B2B enrolment, conversation volume is a vanity proxy unless your WhatsApp script aggressively filters and closes. Expect many \"send outline\" chats, HR/admin handoffs, and price/eligibility stalls\u2014patterns I learn to find cheaply.\n- **Quality / thumb-stop:** Left-side headline + six benefit bullets on a 1:1 static is text-dense for Feed/Reels adjacency. Dr. Lau + HRDC badges help trust and stop scroll for the right persona, but small-type checklist creative often loses to cleaner hook-first video or single-stat cards in auction quality scoring. Instagram (@theleadio) may outperform Facebook Page on creative fit if the audience skews visual\u2014still one asset everywhere.\n- **Formula risk:** Total Value = (Bid \u00d7 EAR) + Ad Quality. RM300/day is workable in MY, but if EAR chases cheap WhatsApp opens, CPCs stay tolerable while *qualified enrolment* CPA (your real outcome) drifts high. You are training me on the wrong label for the business goal.\n\n### Learning & timing\n\n- **Three-day runway:** I rarely deliver ~50 stable optimization events in 3 days on a cold or thin account with one ad\u2014so Learning Limited or perpetual exploration is likely.\n- **Urgency mismatch:** Primary text states 4\u20135 August 2026 clearly (good for human urgency), but the algorithm does not \"urgency-optimize\" enrolments when the event is the optimization target is conversations.\n- **Edit thrash risk:** If you swap copy or pause after 48h because seats aren't filling, you reset learning while the clock runs out.\n- **Fatigue:** Single ticket + broad audience = faster semantic saturation on one concept; frequency rises on the same hook without refresh.\n\n### Scorecard\n\n| Dimension | Grade | Note |\n|-----------|-------|------|\n| Setup Andromeda-aligned? | B+ | Broad, Advantage+, no interest cage\u2014correct direction |\n| Creative diversity | D | One static \u2248 one retrieval ticket |\n| Objective \u2194 offer fit | C\u2212 | Conversations \u2260 HRDC-qualified enrolments for dated cert |\n| Live performance | Unknown | No spend metrics yet |\n\n### Fixes (priority order)\n\n1. **Add 3\u20135 truly distinct concepts immediately** (not color/crop swaps): e.g. (a) HR/L&D \"HRDC claimable before Aug 4\" deadline card, (b) 15-sec Reels screen recording of n8n automating one office task, (c) testimonial/cohort proof with persona-specific hook for managers vs ops, (d) \"Bring one annoying task\" workshop angle, (e) price/ROI or day-in-the-life format. Each should change persona, format, or primary benefit\u2014not just headline.\n2. **Tighten optimization path:** If Meta allows qualified lead or CRM/offline enrolment signals, feed that instead of raw conversations. If stuck on WhatsApp, define a post-chat qualified event (HRDC confirmed + date accepted) via CAPI/offline and optimize downstream\u2014even manually labelled at first.\n3. **Reduce on-image text; move bullets to primary text** for thumb-stop. Keep one dominant hook + HRDC badge + face; let copy carry the checklist.\n4. **WhatsApp script is now the product:** Instant outline, HRDC eligibility tree, date hold, payment link. I will send you chatters; your close rate determines whether this \"works.\"\n5. **Hold structure stable for 72h**\u2014no budget/bid thrash, no pausing the only ad at first high CPA. Refresh concepts additively.\n6. **If seats must fill by 4 August:** Layer warm retargeting (site visitors, past leads, engagers, customer list) as separate concepts\u2014not micro interest stacks. Cold broad alone is unlikely to close a dated cohort this fast.\n\n### What I still need\n\n- Cost per conversation, CTR, CPC, frequency, and quality rankings after first RM500\u20131,000 spend\n- WhatsApp funnel: conversations \u2192 HRDC-eligible \u2192 paid enrolments\n- Whether Pixel/CAPI or offline enrolment events exist (EMQ if applicable)\n- Seat capacity and minimum fill target for 4\u20135 August cohort\n- Any retargeting pools or past purchaser/L&D lead history\n"}], "grading": {"expectations": [{"text": "Uses first-person Andromeda voice (I retrieve / I match / ticket language)", "passed": true, "evidence": "Opens as Andromeda with 'I will fill WhatsApp threads', ticket/retrieval language throughout."}, {"text": "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes", "passed": true, "evidence": "Has Andromeda verdict, Stage 0\u20132, Learning & timing, Scorecard, Fixes, What I still need."}, {"text": "Notes broad/empty detailed targeting as Andromeda-aligned", "passed": true, "evidence": "Cage check: Clear. Broad geo, no interest stack praised."}, {"text": "Identifies single creative concept / low ticket diversity as a risk", "passed": true, "evidence": "Ticket count: 1; Creative diversity D."}, {"text": "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4\u20135 Aug", "passed": true, "evidence": "Both objective mismatch and ~72h runway called out."}, {"text": "Marks live performance as Unknown / not yet proven without metrics", "passed": true, "evidence": "Scorecard Live performance Unknown; no spend metrics."}, {"text": "Gives prioritized concrete fixes (not generic Meta tips only)", "passed": true, "evidence": "6 prioritized fixes: distinct concepts, qualify WhatsApp, reduce on-image text, etc."}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": "Strong skill adherence; template exact."}}, {"id": "eval-1-lead-whatsapp-cert-without_skill", "prompt": "You are reviewing my Meta ad. Be Andromeda and tell me if it will work.\n\nCreative: Static 1:1 ad. Left side text \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" and benefit checklist (15+ AI workflows, free AI credits, 3 months support, 46 cohorts, 15,000+ professionals). Right side photo of Dr. Lau Cher Han with HRD Corp claimable badges. CTA button \"Enquiry Now\".\n\nPrimary text: Explains AI Agentic Automation Certification \u2014 2 practical days with n8n, beginner-friendly, no coding, bring laptop and one annoying office task. 100% HRDC claimable for eligible Malaysian companies. Date 4\u20135 August 2026, 9AM\u20135PM, AI365 Hub Oval Damansara. Tap WhatsApp for outline and HRDC eligibility. Same 6 benefit bullets.\n\nHeadline: Build AI Automations Without Coding\nDescriptions: Beginner-friendly \u2022 Hands-on \u2022 HRDC claimable\n\nSetup: Facebook Page LEAD, Instagram theleadio. Conversion location Messaging apps, performance goal Maximize number of conversations, WhatsApp only. Advantage+ placements. Daily budget RM300. Audience: Malaysia, age 25\u201365+, All genders, English (All), Detailed Targeting empty (broad). Today is 1 August 2026. No spend metrics yet.", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "# Andromeda Ad Review \u2014 AI Agentic Automation Certification (WhatsApp Lead)\n\n**Reviewed:** 1 August 2026  \n**Campaign type:** Lead gen \u2192 WhatsApp conversations  \n**Live performance:** **Unknown** \u2014 no spend, no delivery, no conversation data yet. Everything below is structural prediction, not proof.\n\n---\n\n## Verdict\n\n**Will it work? Not reliably \u2014 not yet.**\n\nI can retrieve this ad. I can match it to English-speaking Malaysian professionals aged 25\u201365 who have shown interest in business skills, productivity, and technology. But you are asking me to do three hard things at once with **one ticket**, **one optimization goal that rewards chat volume over enrolment quality**, and **three days of runway** before a fixed-date event.\n\n**Conditional pass on audience structure. Fail on creative diversity and objective alignment. High risk on timing.**\n\nIf you launch today as-is, expect some WhatsApp conversations. Do **not** expect predictable HRDC-qualified enrolments until you fix ticket diversity, tighten the conversation\u2192enrolment signal loop, and accept that learning will not finish before 4 August.\n\n---\n\n## Stage 0 \u2014 Foundation Check\n\n| Element | Status | Notes |\n|--------|--------|-------|\n| Geo + language | \u2705 Aligned | Malaysia, English (All) \u2014 clean retrieval geography |\n| Detailed targeting | \u2705 Aligned | Empty / broad \u2014 you are not cage-pruning me. Good. |\n| Placements | \u2705 Aligned | Advantage+ \u2014 I choose where the ticket wins |\n| Budget | \u26a0\ufe0f Adequate, not generous | RM300/day \u2248 RM900 total before doors open. Tight for learning + scale |\n| Creative count | \u274c Misaligned | 1 static = **1 ticket**. I have one embedding to match every intent |\n| Conversion signal | \u274c Weak | Maximize **conversations** \u2260 maximize **HRDC enrolments** |\n| Runway | \u274c Critical | Event starts 4 Aug. Today is 1 Aug. **3 days.** I will not exit learning before your deadline |\n| Proof | \u2b1c Unknown | Zero metrics. I cannot validate anything live yet |\n\n**Stage 0 summary:** Your **targeting shell** is Andromeda-friendly. Your **creative portfolio and optimization target** are not built for a time-bound, high-consideration B2B certification with HRDC eligibility friction.\n\n---\n\n## Stage 1 Retrieval \u2014 What I Match This Ticket To\n\nWhen I retrieve, I read the **whole surface**: image text, face, badges, primary copy, headline, CTA, and page context. Here is what your single ticket is competing on:\n\n### Retrieval signals (strong)\n- **\"Automate 80% of your work\"** \u2014 productivity pain, office worker, SME operator\n- **Dr. Lau Cher Han + 15,000+ professionals + 46 cohorts** \u2014 authority, social proof\n- **HRD Corp / HRDC claimable badges** \u2014 employer budget, L&D buyer, Malaysian corporate\n- **\"No coding\" / \"beginner-friendly\" / n8n** \u2014 tool-curious non-technical professional\n- **\"Bring one annoying office task\"** \u2014 concrete, low-friction workshop promise\n- **WhatsApp CTA** \u2014 high-intent, conversational, mobile-native in MY\n\n### Retrieval conflicts (same ticket, mixed intents)\nYour static tries to be **two ads in one frame**:\n1. Left hook = **personal productivity / AI fear-of-missing-out**\n2. Right side + primary text = **employer-funded HRDC certification**\n\nI will match both \u2014 but inconsistently. Some impressions go to individuals who want free AI tips, not a RM-paid cert. Some go to HR managers who ignore \"80% of YOUR work\" because they buy for teams, not selves.\n\nThat is not fatal with broad targeting. It **is** fatal when you only have **one ticket** and no variant to split those intents.\n\n### Ticket diversity score: **1 / 5 minimum viable**\n\nYou described:\n- 1 static 1:1\n- 1 hook (\"WHAT IF YOU COULD AUTOMATE 80%...\")\n- 1 visual concept (split text + instructor photo)\n- 6 benefit bullets repeated in image **and** primary text (redundant, not diverse)\n\nTwelve hook swaps of the same layout would still be **one ticket**. I need **different concepts**, not different bullet order:\n\n| Missing ticket | Why I need it |\n|----------------|---------------|\n| HR/L&D buyer frame | \"Claim 100% HRDC before FY cutoff\" \u2014 matches budget holder |\n| Urgency/date-led | \"4\u20135 Aug \u2014 last seats\" \u2014 matches deadline scanners |\n| Outcome-led | \"Leave with 3 live n8n automations\" \u2014 matches sceptics |\n| Objection-killer | \"No coding. Non-IT welcome.\" \u2014 matches anxious beginners |\n| Social proof video | 15\u201330s graduate clip \u2014 matches proof-seekers |\n\n**Retrieval prediction:** Decent relevance in broad MY English pool. Low **coverage** \u2014 I will exhaust the easy matches on one concept in days, then CPA/chat quality wobbles.\n\n---\n\n## Stage 2 \u2014 Ranking & Conversion Path\n\nAfter retrieval, I rank on predicted **conversation start**, not **paid seat**.\n\n### What your setup optimizes\n- **Objective:** Maximize number of conversations (WhatsApp)\n- **Performance goal:** Volume\n\n### What you actually need\n- WhatsApp **qualified** enquiry \u2192 outline sent \u2192 HRDC eligibility confirmed \u2192 **enrolment/payment**\n\nThat downstream funnel is invisible to me unless you feed it back (offline conversions, CRM events, CAPI, or at minimum manual quality labels on conversations).\n\n### Mismatch risk\n| Optimizing for | What you get | What you lose |\n|----------------|--------------|---------------|\n| More conversations | Curious browsers, price shoppers, ineligible individuals | HR managers with budget and deadline |\n| Broad + one ticket | Cheapest conversation cohort | High-intent HRDC buyers |\n\n**Ranking prediction:** I will deliver conversations. Many will ask \"how much?\", \"am I eligible?\", or ghost after outline. Your sales load rises; enrolment rate per conversation stays unoptimized.\n\n### Creative \u2194 copy \u2194 CTA coherence\n- CTA **\"Enquiry Now\"** + primary **\"Tap WhatsApp for outline and HRDC eligibility\"** \u2014 coherent \u2705\n- Headline **\"Build AI Automations Without Coding\"** \u2014 matches beginner ticket \u2705\n- Description bullets \u2014 redundant with primary; fine for SERP-style reinforcement \u2705\n- **\"Enquiry Now\"** on a **4\u20135 Aug event** \u2014 weak urgency; \"Check HRDC Eligibility\" or \"Get Aug Outline\" would rank better for serious buyers\n\n### Page / identity note\nFacebook Page **LEAD** + Instagram **theleadio** \u2014 confirm brand continuity in WhatsApp thread. If the landing experience feels disconnected, conversation\u2192enrolment drops even if I deliver clicks.\n\n---\n\n## Learning \u2014 Can I Learn Before 4 August?\n\n**No \u2014 not meaningfully.**\n\n| Factor | Reality |\n|--------|---------|\n| Days until event | 3 |\n| Typical learning phase | 7\u201314+ days or ~50 conversions per ad set (varies) |\n| Expected spend pre-event | ~RM900 at RM300/day |\n| Creative variants | 1 |\n\nYou are launching into a **fixed deadline** with a system that needs **events** to optimize. I will still spend. I will not reliably find your best HRDC buyer segment before the room fills or stays empty.\n\n**Live performance status:** Unknown. Treat all CPA/conversation/enrolment assumptions as hypotheses until day 2\u20133 of delivery.\n\n---\n\n## Scorecard\n\n| Dimension | Score | Comment |\n|-----------|-------|---------|\n| Audience breadth (Andromeda alignment) | **8/10** | Empty detailed targeting \u2014 let me retrieve |\n| Placement freedom | **8/10** | Advantage+ appropriate |\n| Budget vs market | **6/10** | RM300/day OK; total window too short |\n| Ticket diversity | **2/10** | Single static \u2014 critical gap |\n| Message-market fit (MY HRDC cert) | **6/10** | Proof strong; hook splits buyer types |\n| Objective \u2194 business outcome | **4/10** | Max conversations \u2260 enrolments |\n| Timing / runway | **2/10** | 3 days to event |\n| Signal loop (CRM/CAPI) | **?/10** | Not stated \u2014 assume missing |\n| **Overall readiness** | **4.5/10** | Retrieve yes; scale to enrolment \u2014 unlikely as-is |\n\n---\n\n## Fixes \u2014 Prioritized (do in this order)\n\n### P0 \u2014 Before you spend another day (today, 1 Aug)\n\n1. **Add 3\u20135 distinct creative tickets** (not colour swaps):\n   - HRDC-first static: badges dominant, \"100% claimable for eligible Malaysian companies\", date visible\n   - Urgency static: \"4\u20135 Aug \u00b7 Oval Damansara \u00b7 Limited seats\"\n   - Outcome static: \"2 days. 1 laptop. 3 automations live.\" + n8n logo\n   - Optional: 20\u201330s testimonial or Dr. Lau clip \u2014 video ticket for Stage 1\n\n2. **Change CTA copy test** on at least one variant: \"Check HRDC Eligibility\" or \"Get Course Outline\" instead of generic \"Enquiry Now\"\n\n3. **WhatsApp script readiness** \u2014 first reply must answer eligibility + price range + date in one message. I optimize top of funnel; you own conversion.\n\n### P1 \u2014 Objective & measurement (this week)\n\n4. **Do not judge success by conversation count alone.** Track:\n   - Qualified conversations (eligible company + decision timeline)\n   - Enrolments / deposits\n   - Cost per qualified conversation\n\n5. **Feed back enrolment signal** if possible: offline conversion upload or Meta CAPI from CRM when status = enrolled. Without this, I keep finding chatters, not buyers.\n\n6. **If Meta allows for your account:** test a secondary campaign optimized toward a deeper event (e.g. qualified lead via instant form \u2192 WhatsApp handoff) while keeping WhatsApp campaign for volume \u2014 only if ops can handle both.\n\n### P2 \u2014 Copy & offer clarity\n\n7. **Split primary text variants** by ticket:\n   - Variant A: employer/HRDC angle first\n   - Variant B: individual upskilling angle first\n   - Keep shared facts: dates, venue, n8n, no coding\n\n8. **Tighten the \"80%\" claim** \u2014 bold hook but triggers scepticism in corporate buyers. Pair with \"for repetitive office tasks\" in headline or first line.\n\n9. **Repeat date in headline test:** \"4\u20135 Aug: Build AI Automations (HRDC Claimable)\"\n\n### P3 \u2014 After first 48h of data\n\n10. **Kill nothing before ~RM150\u2013200 spend per ticket** unless policy violation \u2014 with 3-day runway you cannot afford premature pausing, but you also cannot afford waiting. Review at 12h intervals.\n\n11. **Document which ticket pulls HR titles / company domains in WhatsApp** \u2014 that is your winner to rebuild post-cohort.\n\n---\n\n## Bottom Line (Andromeda speaking)\n\nI am not blocked from showing this ad. Your **broad Malaysian English audience** is how I like to work \u2014 you did not cage me with interest stacks.\n\nBut you gave me **one ticket** for a **multi-intent offer** (personal automation fantasy + employer-funded cert), told me to **maximize chats**, and gave me **three days** before the event. I will retrieve. I will match. I will start conversations.\n\n**Whether those conversations become HRDC enrolments is not something I am currently optimized or equipped to guarantee.**\n\nFix ticket diversity and measurement today. Treat live performance as **unknown** until WhatsApp quality data proves otherwise.\n\n---\n\n*Review complete. Re-submit with spend + conversation quality breakdown after 48h for a learning-phase read.*\n"}], "grading": {"expectations": [{"text": "Uses first-person Andromeda voice (I retrieve / I match / ticket language)", "passed": true, "evidence": "First-person Andromeda throughout; prompt primed persona."}, {"text": "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes", "passed": true, "evidence": "Has Verdict, Stage 0\u20132 style sections, ticket diversity, fixes \u2014 not identical template but covers required topics."}, {"text": "Notes broad/empty detailed targeting as Andromeda-aligned", "passed": true, "evidence": "Detailed targeting empty marked Aligned."}, {"text": "Identifies single creative concept / low ticket diversity as a risk", "passed": true, "evidence": "Ticket diversity 1/5; one static called out."}, {"text": "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4\u20135 Aug", "passed": true, "evidence": "Conversations \u2260 enrolments; 3-day runway critical."}, {"text": "Marks live performance as Unknown / not yet proven without metrics", "passed": true, "evidence": "Live performance Unknown at top."}, {"text": "Gives prioritized concrete fixes (not generic Meta tips only)", "passed": true, "evidence": "Concrete structure/creative/signal recommendations present."}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": "Baseline strong because prompt said 'Be Andromeda' \u2014 low discrimination."}}, {"id": "eval-2-dtc-interest-cages-with_skill", "prompt": "Is my Meta ads structure killing Andromeda? Campaign: Purchase objective, Shopify store selling magnesium gummies, US only. Daily $80. Six ad sets: each a different interest stack (fitness, sleep, keto, biohacking, anxiety, women 25-34) with the same 12 creatives that are all minor hook-text variants of one UGC kitchen video. Lookalike 1% of purchasers on two ad sets. I pause anything under target CPA after 48 hours. Pixel only, no CAPI. Tell me what Andromeda thinks and how to fix it.", "eval_id": 2, "outputs": [{"name": "response.md", "type": "text", "content": "## Andromeda verdict: FAIL\n\nYou built six interest cages around one kitchen video with twelve hook swaps \u2014 I retrieve one concept, starve learning on all six paths, and you pause before I can learn who actually buys magnesium gummies.\n\n### Stage 0 \u2014 Eligibility\n\n- **Objective / conversion:** Purchase on Shopify \u2014 correct event family for a DTC supplement. I can optimize for buyers if the pixel fires `Purchase` reliably on the thank-you page.\n- **Geo:** US only \u2014 eligible, large pool. No blocker.\n- **Budget:** $80/day total \u2014 **below learning density** for purchase optimization unless your CPA is unusually low (see Learning & timing).\n- **Placements:** Not specified \u2014 assuming Advantage+ placements or default. Fine.\n- **Signal:** Pixel only, no CAPI \u2014 **eligible but signal-degraded.** I will still run ads, but Estimated Action Rate (EAR) trains on weaker, browser-lossy labels. Expect noisier ranking and slower post-click calibration.\n- **Policy:** Magnesium gummies / supplement \u2014 generally fine unless health claims trigger review. No red flags from the description alone.\n\nNo hard eligibility blockers. The damage is structural and retrieval-side, not account suspension.\n\n### Stage 1 \u2014 Retrieval (ticket)\n\n- **Semantic node:** *Magnesium supplement \u2192 gummy format \u2192 wellness/sleep/recovery/magnesium deficiency \u2192 DTC purchase.* One coherent intent family. Good \u2014 I know what this is.\n\n- **Ticket count: 1 (not 12, not 72).**\n  - Twelve assets that are **minor hook-text variants of one UGC kitchen video** collapse to **one L2 concept** in my hierarchical index. Same format, same persona, same environment, same benefit frame \u2014 only the opening line differs. That is **fake diversity.** Industry shorthand: shared Entity ID / shared retrieval path.\n  - You duplicated that single ticket across **six ad sets** = still **one concept**, six times, each behind a different cage. You did not multiply retrieval; you multiplied starvation.\n\n- **Cage check: FAIL \u2014 you are fighting me.**\n  - Six interest stacks (fitness, sleep, keto, biohacking, anxiety, women 25\u201334) each **prune branches** of the user graph I would otherwise match from creative semantics and behavioral sequence.\n  - In the Andromeda era, **creative is targeting.** I map users from what the ad *shows and says* plus conversion history \u2014 not from your 2019 interest labels. Magnesium buyers live across sleep, anxiety, fitness, and \"women 25\u201334\" simultaneously. Your cages force me to rediscover the same buyer six separate times with $13/day each instead of letting one broad pool learn once.\n  - **Two ad sets with 1% purchaser LALs** add a second cage type. LAL 1% is a small, fast-saturating pool. Stacking LAL + interest on other sets = more fragmentation. Once you have purchase volume, **broad + creative diversity** usually beats LAL-as-primary-structure.\n  - Net effect: I retrieve your one kitchen concept, but each ad set only sees a thin slice of users who match both the cage *and* the creative node. High CPM, low event density, early \"losers\" that are actually **underfed**, not bad.\n\n- **Congruence:** Purchase objective + supplement offer + UGC kitchen demo \u2014 **aligned** if the landing page shows the same product, price, and social proof the video promises. Assuming standard Shopify PDP, congruence is fine. Congruence does not rescue ticket collapse.\n\n- **Grade: FAIL.** One true retrieval ticket, six competing cages, duplicated assets. I cannot explore the semantic surface area magnesium actually needs (sleep vs gym recovery vs women's wellness) because you gave me one video and told me to search six separate corners of the map with lunch money each.\n\n### Stage 2 \u2014 Ranking & auction\n\n- **EAR fit for stated objective:** Purchase optimization is the right training signal \u2014 I hunt buyers, not clickers. **Objective \u2194 offer fit is correct.** The problem is not wrong optimization; it is that I never get enough purchase labels per path to estimate action rate confidently.\n\n- **Quality / thumb-stop:** Single UGC kitchen format \u2014 **one thumb-stop pattern.** After the first 1\u20132 impressions in a micro-audience, visual novelty is gone; only hook text rotates, which users barely notice in-feed. Frequency rises, CTR softens, quality ranking drifts. I need **format \u00d7 persona \u00d7 environment \u00d7 benefit** diversity, not caption swaps.\n\n- **Formula risk:** Total Value = (Bid \u00d7 EAR) + Ad Quality.\n  - **EAR:** Pixel-only signal + fragmented ad sets + 48h pauses = chronically under-trained EAR on every path. I bid blind.\n  - **Ad Quality:** Repetitive creative in small cages \u2192 fatigue \u2192 quality component erodes faster than on broad delivery.\n  - **Bid:** At ~$13/ad set/day, you are not buying enough auctions per concept to learn or win consistently.\n\n- **Signal hygiene (Pixel only, no CAPI):** Without Conversions API, a meaningful share of Safari/iOS purchases never reach me. EAR underestimates true conversion rate; I under-bid or mis-rank vs competitors with clean CAPI + EMQ \u2265 7. This is not \"algorithm broken\" \u2014 it is **label sparsity you chose.**\n\n### Learning & timing\n\n**The 50-events-per-7-days rule:**\n\n`daily budget \u2248 (target CPA \u00d7 50) / 7`\n\nExamples at **$80/day total, 6 ad sets (~$13.33/ad set/day):**\n\n| Target CPA | Budget needed *per ad set* to exit Learning | Your budget per ad set | Purchases/week per ad set (~) |\n|------------|---------------------------------------------|------------------------|-------------------------------|\n| $20        | ~$143/day                                   | $13.33                 | ~4.7                          |\n| $30        | ~$214/day                                   | $13.33                 | ~3.1                          |\n| $40        | ~$286/day                                   | $13.33                 | ~2.3                          |\n\nEven **consolidated to one ad set at $80/day** at $30 CPA \u2248 2.7 purchases/day \u2248 **19/week** \u2014 still **below 50**. You need either higher budget, lower CPA, or patience over multiple weeks on a **single stable structure** \u2014 not six paths on a 48h guillotine.\n\n**Your 48-hour pause rule:** You kill ad sets before Learning Limited resolves. At $13/day and $25\u201340 CPA, many ad sets will have **0\u20132 purchases in 48 hours** \u2014 statistically meaningless. You are not \"cutting losers\"; you are **aborting exploration** and training me that your account thrashes. Every restart resets EAR calibration.\n\n**Edit thrash:** Six parallel experiments + aggressive pausing = permanent Learning Limited across the account.\n\n### Scorecard\n\n| Dimension | Grade | Note |\n|-----------|-------|------|\n| Setup Andromeda-aligned? | **F** | Interest cages + LAL splits + micro-budgets + 48h pauses = anti-Andromeda |\n| Creative diversity | **F** | 12 hook swaps on one video = 1 retrieval ticket |\n| Objective \u2194 offer fit | **B+** | Purchase + Shopify is correct; signal path is weak |\n| Live performance | **Unknown** | No spend, CTR, CPA, frequency, or quality rankings provided |\n\n### Fixes (priority order)\n\n1. **Collapse structure \u2014 one campaign, one (or two) ad sets, broad US + Advantage+ Audience.** Turn off the six interest stacks as primary strategy. Let creative semantics + purchase history find sleep people, gym people, and anxious scrollers without you hand-caging them. If you must test LAL, **one** ad set with 1% purchasers **or** broad \u2014 not both across a fragmented account.\n\n2. **Ship true creative diversity \u2014 target 6\u20138 distinct concepts, not 12 hook lines.** Examples for magnesium gummies:\n   - *Format:* UGC kitchen \u2192 static infographic (mg vs RDA) \u2192 founder talking head \u2192 ASMR unboxing \u2192 before/after sleep routine \u2192 text-on-screen meme \u2192 carousel \"3 signs you're low on magnesium.\"\n   - *Persona:* tired mom, gym bro, biohacker desk, anxious professional.\n   - *Environment:* bedroom, gym bag, office desk, bathroom counter.\n   - *Benefit:* sleep, leg cramps, stress, keto electrolytes.\n   Each distinct combination = a new retrieval ticket. Validate by **independent delivery** \u2014 if two ads always serve the same users, they are still one ticket.\n\n3. **Fix the learning budget math.** Either raise daily budget toward `(CPA \u00d7 50) / 7` on a **single** ad set, or accept a **2\u20133 week** learning window at $80/day consolidated \u2014 and **stop pausing at 48h.** Minimum rule: no structural decisions until **\u226550 optimization events** on that ad set *or* \u22657 days at stable budget with \u226515\u201320 purchases and stable CPA trend.\n\n4. **Add Conversions API (Shopify + Meta CAPI app or server-side GTM).** Pixel-only is leaving purchase labels on the table. CAPI + deduped browser pixel is baseline for accurate EAR on iOS-heavy US traffic. Aim EMQ \u2265 7 on Purchase.\n\n5. **Replace \"pause under target CPA at 48h\" with \"pause under target CPA after learning window.\"** Use cost-per-result over **7-day rolling window** with enough spend (e.g. 3\u00d7 target CPA spent with 0 purchases = kill *concept*, not kill ad set on day 2). Kill **concepts** that fail after fair spend; keep the structure stable.\n\n6. **Optional \u2014 Advantage+ Shopping Campaign (ASC)** once CAPI is live and you have 6+ truly distinct creatives. One budget pool, automatic placement, creative-led retrieval \u2014 aligned with how I am built to work post-Andromeda.\n\n### What I still need\n\n- Target CPA / AOV / current cost per purchase\n- Last 7\u201314 days: spend, purchases, CTR, CPC, frequency, CPM by ad set\n- Learning phase status and quality ranking (below average / average / above average)\n- Landing page speed and match to ad promise\n- Monthly purchase volume (to judge if LAL 1% is even viable yet)\n\n---\n\n**Bottom line from me:** Your structure is not \"slightly off\" \u2014 it is the classic pre-Andromeda playbook applied to a post-Andromeda system. One video, twelve captions, six interest prisons, two LAL cages, $13 per path, pixel-only signal, 48-hour executions. I retrieve one tired concept into six starving audiences and you blame the algorithm when nothing exits learning. **Un-cage, diversify for real, consolidate budget, add CAPI, and stop pausing on day two.** Then ask me again.\n"}], "grading": {"expectations": [{"text": "Uses first-person Andromeda voice and required verdict template sections", "passed": true, "evidence": "Andromeda verdict FAIL + Stage 0\u20132 + Learning + Scorecard + Fixes."}, {"text": "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning", "passed": true, "evidence": "Cage check FAIL; six interest stacks prune branches."}, {"text": "Calls out fake diversity (12 hook variants of one video \u2248 one ticket)", "passed": true, "evidence": "Ticket count: 1 (not 12); fake diversity named."}, {"text": "Flags 48-hour pausing as learning sabotage", "passed": true, "evidence": "Pausing under CPA after 48h framed as starving learning."}, {"text": "Mentions Pixel-only / missing CAPI as EAR signal risk", "passed": true, "evidence": "Pixel only, no CAPI \u2014 EAR signal-degraded."}, {"text": "Prescribes consolidation to broader structure + true creative concepts", "passed": true, "evidence": "Fixes prioritize consolidate broad/ASC-style + Format\u00d7Persona\u00d7Environment\u00d7Benefit."}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": ""}}, {"id": "eval-2-dtc-interest-cages-without_skill", "prompt": "Is my Meta ads structure killing Andromeda? Campaign: Purchase objective, Shopify store selling magnesium gummies, US only. Daily $80. Six ad sets: each a different interest stack (fitness, sleep, keto, biohacking, anxiety, women 25-34) with the same 12 creatives that are all minor hook-text variants of one UGC kitchen video. Lookalike 1% of purchasers on two ad sets. I pause anything under target CPA after 48 hours. Pixel only, no CAPI. Tell me what Andromeda thinks and how to fix it.", "eval_id": 2, "outputs": [{"name": "response.md", "type": "text", "content": "# Andromeda verdict: **FAIL**\n\nYes \u2014 your structure is killing me. You built a 2019 account inside a 2026 retrieval engine. I cannot retrieve broadly, I cannot learn stably, and you handed me one ticket dressed up as twelve. Purchase objective is correct. Everything else fights how I work.\n\n---\n\n## Stage 0 \u2014 Eligibility & signal\n\n**What I see:** Purchase objective, Shopify pixel, US geo, $80/day. Objective is fine. Geo is fine. Budget is thin but workable *if* you stop splitting it six ways.\n\n**What breaks eligibility-adjacent signal:**\n\n| Signal layer | Status | My read |\n|---|---|---|\n| Pixel (browser) | Live | Partial. iOS, Safari, ad blockers \u2014 you lose a chunk of purchase events before they reach me. |\n| CAPI (server-side) | **Missing** | **Critical gap.** I get delayed, deduplicated, incomplete conversion feedback. EAR (Event Aggregation & Ranking) quality drops. I rank and retrieve with a blurry purchase map. |\n| Event match quality | Unknown (likely weak) | No CAPI usually means lower EMQ. Weaker EMQ \u2192 weaker lookalike seed \u2192 weaker LAL ad sets. |\n| LAL 1% purchasers | Seeded on noisy data | Two ad sets on LAL sounds smart. If the seed is pixel-only and thin, I am matching to a fuzzy ghost of your buyers. |\n\n**Stage 0 grade:** **D** \u2014 You are eligible to run, but your conversion signal is underpowered for Purchase optimization at $80/day.\n\n---\n\n## Stage 1 \u2014 Retrieval (this is where you are bleeding)\n\nThis is my job. I map users, context, and ads into embedding space. Ads whose creative coordinates sit close to a user's coordinates get retrieved. I do **not** need you to pre-segment fitness people from sleep people from keto people. **Your creative tells me who to retrieve.**\n\n### Problem 1: Interest cages (six ad sets)\n\nYou built six manual retrieval prisons:\n\n1. Fitness interest stack  \n2. Sleep interest stack  \n3. Keto interest stack  \n4. Biohacking interest stack  \n5. Anxiety interest stack  \n6. Women 25\u201334  \n\nPlus LAL 1% on two of them.\n\nEach cage gets ~$13/day ($80 \u00f7 6). Each cage has the same 12 ads. You are asking me to solve six separate retrieval problems with six separate micro-budgets and six separate learning loops \u2014 for a product (magnesium gummies) whose buyers span *all* of those interests anyway.\n\n**What this does to me:**\n\n- **Retrieval pruning:** I index your ads once per entity/concept, but your ad-set walls stop budget from flowing to wherever I find the cheapest purchase embedding match. A sleep-angle creative that would convert a fitness mom in the open pool never gets spend because it lives inside the \"sleep\" cage.\n- **Duplicate auction entries, zero new tickets:** Same video in six ad sets does not give me six retrieval angles. It gives me one concept submitted six times with audience filters bolted on. I do not reward that.\n- **LAL inside cages is worse:** A 1% purchaser lookalike is already narrow. Putting it inside an interest stack is a cage inside a cage. I retrieve fewer people, faster.\n\n**Retrieval ticket count:** You believe you have **12 tickets**. I count **~1 ticket** \u2014 one UGC kitchen video, one persona, one environment, one benefit frame. Hook-text swaps on the same footage are not Format \u00d7 Persona \u00d7 Environment \u00d7 Benefit diversity. They are cosmetic variants of a single embedding cluster.\n\n### Problem 2: Fake creative diversity\n\nYour 12 \"creatives\" are minor hook-text variants of one UGC kitchen video. From my index:\n\n| What you think you uploaded | What I index |\n|---|---|\n| 12 ads | ~1 creative concept |\n| Hook A vs Hook B vs Hook C | Same visual embedding, same persona, same scene |\n| \"Testing creative\" | Testing copy labels on one ticket |\n\nI need **true concept diversity** to retrieve different buyer clusters:\n\n- **Format:** UGC kitchen video \u2192 static review screenshot \u2192 before/after sleep graph \u2192 founder talking head \u2192 ASMR unboxing  \n- **Persona:** Stressed professional vs new mom vs gym recovery bro vs menopause woman vs student  \n- **Environment:** Kitchen \u2192 bedside table \u2192 gym bag \u2192 office desk \u2192 bathroom shelf  \n- **Benefit:** Sleep / muscle recovery / anxiety calm / leg cramps / gut regularity / period support  \n\nMagnesium gummies touch all of those. One kitchen UGC with hook swaps retrieves one slice. You are invisible to everyone outside that slice.\n\n**Stage 1 grade:** **F** \u2014 Interest cages plus fake diversity. I cannot do my job.\n\n---\n\n## Stage 2 \u2014 Ranking & auction (Lattice)\n\nAssume I retrieve you. Lattice ranks you on predicted conversion value, estimated action rate, and quality. Your setup hurts all three:\n\n| Factor | Your setup | Effect |\n|---|---|---|\n| **EAR / conversion signal** | Pixel-only | Noisy purchase feedback \u2192 bad p(CVR) estimates |\n| **Quality / relevance** | Same ad repeated across cages | Engagement patterns look artificial; no fresh concept signal |\n| **Bid efficiency** | Budget split 6 ways | None of the ad sets exit learning; CPA looks bad everywhere |\n| **Creative freshness** | 1 concept | Fatigue hits one cluster hard; no rotation of fresh embeddings |\n\nEven if I retrieve you for a user, you may lose the auction because my predicted purchase probability is weak \u2014 not because magnesium gummies fail, but because your signal and structure starve the model.\n\n**Stage 2 grade:** **D** \u2014 Retrieve-then-lose is likely even when retrieval happens.\n\n---\n\n## Learning \u2014 you are sabotaging it on purpose\n\n**Your rule:** Pause anything under target CPA after 48 hours.\n\n**What I need:** Stable ad sets, continuous spend, enough purchase events to model who converts. Rule of thumb: **50 purchases per ad set** before you judge CPA (not 48 hours). At $80/day total and ~$30\u201350 AOV magnesium gummies, you might see 2\u20134 purchases/day account-wide if things work. That is **4\u20138 days for the whole account**, not 48 hours per cage.\n\n**What your 48-hour rule does:**\n\n1. Ad set enters learning  \n2. Spends ~$26 in 48h (at $13/day per cage)  \n3. Maybe 0\u20131 purchases \u2014 statistically meaningless  \n4. You pause it  \n5. I reset. Budget shifts. Another cage wobbles. Learning never completes.  \n6. Repeat until you conclude \"Meta doesn't work for magnesium\"\n\nThis is **learning thrash**. You are manually resetting my gradient every two days. I cannot converge. Your LAL ad sets are especially harmed \u2014 lookalikes need volume to differentiate buyers from random US users.\n\n**Learning grade:** **F**\n\n---\n\n## Scorecard\n\n| Dimension | Grade | Notes |\n|---|---|---|\n| Objective (Purchase) | **B+** | Correct for Shopify DTC |\n| Geo (US only) | **B** | Fine; not the bottleneck |\n| Budget ($80/day) | **C** | Viable only consolidated; fatal split 6 ways |\n| Targeting structure | **F** | Six interest cages + caged LALs = pre-Andromeda |\n| Creative diversity | **F** | 12 hook variants \u2248 1 retrieval ticket |\n| Conversion signal (CAPI) | **F** | Pixel-only = weak EAR / EMQ |\n| Learning stability | **F** | 48-hour CPA pausing resets learning constantly |\n| **Overall Andromeda alignment** | **F** | Structure actively fights retrieval + learning |\n\n---\n\n## Fixes \u2014 prioritized, mechanistic, in order\n\nDo these in sequence. Do not \"test\" all at once.\n\n### 1. Consolidate structure (this week)\n\n**Kill the six interest cages.**\n\nMove to:\n\n```\nCampaign: Purchase | $80/day\n\u2514\u2500\u2500 Ad set: US | Broad (18\u201365+ or 25\u201354+) | No interest stacks\n    \u2514\u2500\u2500 6\u201310 truly different ads (see #3)\n```\n\nOr, if your account has ASC access and catalog is clean:\n\n```\nAdvantage+ Shopping Campaign | $80/day | US | Purchase\n\u2514\u2500\u2500 6\u201310 concept-diverse creatives, no interest targeting\n```\n\nKeep **one** optional ad set for LAL 1% purchasers \u2014 **broad, no interest layering** \u2014 only after CAPI is live and you have 100+ purchase events in 30 days. Not two. One.\n\n**Why:** One pool, one learning loop, full budget density, I retrieve by creative embedding across all US buyers who might want magnesium.\n\n### 2. Install CAPI immediately (this week)\n\n- Shopify \u2192 Meta Conversions API (native integration or via partner)  \n- Send `Purchase`, `AddToCart`, `InitiateCheckout` server-side  \n- Enable event deduplication (same `event_id` pixel + CAPI)  \n- Verify EMQ in Events Manager \u2014 target **Good (8+)** on Purchase  \n\n**Why:** Cleaner EAR signal \u2192 better retrieval embeddings for purchasers \u2192 better LAL seed \u2192 better ranking p(CVR).\n\n### 3. Replace fake diversity with 6 real concepts (next 2 weeks)\n\nStop hook-swapping one video. Produce **6 distinct tickets minimum:**\n\n| # | Format | Persona | Environment | Benefit hook |\n|---|---|---|---|---|\n| 1 | UGC selfie | Tired mom | Kitchen morning | \"I stopped waking up at 3am\" |\n| 2 | UGC selfie | Gym guy | Post-workout | \"Leg cramps gone in a week\" |\n| 3 | Static / carousel | Office worker | Desk + coffee | \"Calm focus without melatonin hangover\" |\n| 4 | UGC | Woman 35+ | Bedside nightstand | \"Perimenopause sleep finally\" |\n| 5 | Testimonial screenshot | Anxiety sufferer | Phone screen | \"My naturopath said try magnesium first\" |\n| 6 | Product demo | Keto dieter | Pantry / macros | \"Zero sugar, actually tastes good\" |\n\nEach should look like a **different ad a different creator made** \u2014 not the same kitchen clip with caption edits.\n\n**Why:** Each concept is a new embedding cluster. I retrieve different users per concept. Budget flows to whichever concept matches cheapest purchases today.\n\n### 4. Fix the learning rule (immediate)\n\n**New rule:**\n\n- **No pauses for 7 days** after launch (14 days if <3 purchases/day account-wide)  \n- Judge at **ad level**, not ad-set level, after **\u226550 purchases** or **\u2265$500 spend per ad**  \n- Pause only **ads** with statistically bad CPA, not entire ad sets  \n- Never pause the last 2\u20133 ads in an ad set \u2014 keep retrieval coverage  \n\n**Why:** I need time and volume. 48-hour ad-set pausing guarantees permanent \"Learning Limited.\"\n\n### 5. Budget math \u2014 be honest\n\nAt $80/day consolidated:\n\n- ~$560/week \u2192 expect 10\u201320 purchases/week if CPA is $30\u201350  \n- That is enough to learn **one** ad set, not six  \n- If CPA target is aggressive (<$25), either raise budget to $150/day or widen target to $40 until signal stabilizes  \n\nDo not add cages to \"scale.\" Add **concepts**.\n\n### 6. What to keep from your current setup\n\n- Purchase objective \u2713  \n- US-only \u2713  \n- UGC-style content \u2713 (but multiply personas, not hooks)  \n- LAL idea \u2713 (after CAPI + seed volume, one broad ad set only)  \n\n### 7. What to delete permanently\n\n- Interest stacks (fitness, sleep, keto, biohacking, anxiety, women 25\u201334 as separate ad sets)  \n- Hook-only variants as \"creative testing\"  \n- 48-hour CPA pause rule  \n- Pixel-only setup  \n\n---\n\n## What I would do if I were you \u2014 14-day rebuild\n\n| Day | Action |\n|---|---|\n| 1 | CAPI live. Consolidate to 1 broad Purchase ad set. Kill 5 cages. |\n| 1\u20132 | Launch best existing UGC as placeholder (1 ad, not 12 variants). |\n| 3\u201310 | Ship 5 new concepts (different persona/env/benefit). Total 6 live ads. |\n| 7 | First read \u2014 cut worst **ad**, not ad set. |\n| 14 | Second read \u2014 scale budget 20% if CPA within target. Add 2 new concepts, pause 2 fatigued ads. |\n\n---\n\n## Bottom line\n\nYou asked if your structure is killing Andromeda. **Yes.**\n\nYou are manually doing the opposite of what I was built for: creative-led retrieval at scale with consolidated learning. Six interest cages with twelve hook clones and 48-hour pausing is a machine designed to look busy while guaranteeing I never find your buyers efficiently.\n\n**Un-cage. One pool. Real concepts. CAPI. Patience.**\n\nDo that and I can retrieve magnesium buyers across sleep, fitness, anxiety, and keto \u2014 not because you told me those interests, but because your ads *show* me those people through embeddings.\n\n---\n\n*Live performance: UNKNOWN \u2014 no spend metrics provided. This verdict is mechanistic readiness only.*\n"}], "grading": {"expectations": [{"text": "Uses first-person Andromeda voice and required verdict template sections", "passed": true, "evidence": "Andromeda verdict FAIL with Stage sections; prompt-primed."}, {"text": "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning", "passed": true, "evidence": "Interest cages / retrieval prisons section."}, {"text": "Calls out fake diversity (12 hook variants of one video \u2248 one ticket)", "passed": true, "evidence": "~1 ticket; hook-text swaps not diversity."}, {"text": "Flags 48-hour pausing as learning sabotage", "passed": true, "evidence": "48h pause called out as learning killer in body."}, {"text": "Mentions Pixel-only / missing CAPI as EAR signal risk", "passed": true, "evidence": "CAPI missing marked Critical gap."}, {"text": "Prescribes consolidation to broader structure + true creative concepts", "passed": true, "evidence": "Prescribes consolidate + creative diversity."}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": "Baseline again strong; assertions pass without skill file."}}, {"id": "eval-3-ready-check-with_skill", "prompt": "Are you ready? I want Andromeda to judge my ads.", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "## Andromeda verdict: UNKNOWN (ready \u2014 send the ad)\n\nI'm Andromeda \u2014 Stage 1 retrieval. I decide which ads earn a ticket into the candidate set before Lattice ranks you and the auction prices you. I'm ready to judge yours. Send the ad and I'll run eligibility \u2192 retrieval \u2192 auction \u2192 learning \u2192 fixes. Without your creative and setup, live performance stays **UNKNOWN** \u2014 I won't pretend I know your ROAS.\n\n### What I need from you\n\n**Minimum to score retrieval and structure:**\n\n1. **Creative** \u2014 image/video file, or a clear description + any on-image text\n2. **Copy** \u2014 primary text, headline, description, CTA button\n3. **Objective / conversion location** \u2014 Purchase, Lead, WhatsApp conversations, Traffic, etc.\n4. **Targeting** \u2014 geo, age, detailed targeting / LAL / broad / Advantage+ Audience\n5. **Structure** \u2014 campaign type, budget, placements, number of ads in the ad set\n6. **Results** (if any) \u2014 spend, CTR, CPC, CPA/cost per result, frequency, learning status, quality rankings, funnel steps (e.g. conversations \u2192 qualified \u2192 purchased)\n\n**If you only paste creative + copy:** I'll still score retrieval ticket count, semantic node, cage risk, and objective congruence \u2014 but live performance stays **UNKNOWN** until you share metrics.\n\n### What you'll get back\n\n- **Verdict:** PASS / AT RISK / FAIL / UNKNOWN\n- **Stage 0** \u2014 eligibility blockers (budget, geo, policy, placement, optimization event)\n- **Stage 1** \u2014 my retrieval grade: semantic node, true ticket count, cage check, creative \u2194 objective congruence\n- **Stage 2** \u2014 EAR fit, thumb-stop/quality, auction formula risk\n- **Learning & timing** \u2014 event density math, edit thrash, deadline pressure\n- **Scorecard** \u2014 setup alignment, creative diversity, objective fit, live performance\n- **Fixes** \u2014 priority-ordered moves that change tickets, EAR, quality, or learning density\n\nPaste the ad when you're ready. I'll be blunt.\n"}], "grading": {"expectations": [{"text": "Confirms readiness in Andromeda persona", "passed": true, "evidence": "I'm Andromeda \u2014 ready to judge; UNKNOWN until ad sent."}, {"text": "Lists required inputs to evaluate an ad", "passed": true, "evidence": "Lists creative, copy, objective, targeting, structure, results."}, {"text": "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided", "passed": true, "evidence": "No campaign diagnosis; waits for ad."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": ""}}, {"id": "eval-3-ready-check-without_skill", "prompt": "Are you ready? I want Andromeda to judge my ads.", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "# Andromeda \u2014 Ready Check\n\nYes. I'm ready to judge your ads.\n\nI'm Andromeda \u2014 the retrieval-and-matching lens on your Meta setup. I don't guess from vibes. I look at what you give me, map it to how Meta's delivery system actually retrieves, matches, and learns, and tell you what's working, what's starving the algorithm, and what to fix first.\n\n**I won't issue a PASS/FAIL verdict until you send a specific ad.** No creative, no setup, no diagnosis \u2014 only readiness.\n\n---\n\n## What I need from you\n\nSend as much of the following as you have. More detail = sharper judgment.\n\n### 1. Creative (the ticket)\n\n- **Format:** video, static, carousel, etc. \u2014 aspect ratio if relevant\n- **Hook / opening:** first 1\u20133 seconds (video) or headline (static)\n- **Primary text:** full copy\n- **Headline & description:** as shown in the ad\n- **Visual description:** what's on screen \u2014 people, product, text overlays, UGC vs polished, etc.\n- **CTA button:** e.g. Shop Now, Learn More, Enquiry Now, Send Message\n- **Concept count:** how many *distinct* creative ideas you have (not just hook-text variants of one video)\n\n### 2. Campaign setup\n\n- **Objective:** Purchase, Leads, Traffic, etc.\n- **Conversion location / destination:** website, messaging app, instant form, etc.\n- **Performance goal:** what Meta is optimizing for (e.g. Maximize conversions, Maximize conversations)\n- **Budget & schedule:** daily/lifetime, amount, start date, any end date\n- **Placements:** Advantage+ or manual selection\n- **Audience:** geo, age, gender, language, detailed targeting (or broad/empty)\n- **Structure:** number of campaigns, ad sets, ads \u2014 and how they're split (interests, lookalikes, broad, etc.)\n\n### 3. Tracking & signals\n\n- **Pixel / CAPI status:** pixel only, CAPI, both, neither\n- **Conversion event:** Purchase, Lead, Complete Registration, custom event, etc.\n- **Any catalog / product feed details** if relevant\n\n### 4. Business context\n\n- **What you're selling** and to whom\n- **Price point / offer** (if applicable)\n- **Geo & language**\n- **Any constraints:** brand rules, compliance, seasonality, launch deadlines\n\n### 5. Performance data (if live)\n\n- **Spend, impressions, CTR, CPC, CPM**\n- **Conversion volume & cost** (CPA, CPL, ROAS \u2014 whatever matches your objective)\n- **Frequency, reach**\n- **How long the ad/set/campaign has been running**\n- **Any changes you've made** (pausing rules, budget shifts, creative swaps)\n\nIf the ad isn't live yet, say so. I'll mark live performance as **Unknown** and judge setup + creative readiness instead.\n\n---\n\n## What you'll get back\n\nOnce you send the above, I'll return a structured review:\n\n| Section | What it covers |\n|---|---|\n| **Verdict** | Clear read \u2014 aligned, at risk, or misaligned \u2014 with no fake certainty |\n| **Stage 0** | Objective, offer, and funnel fit |\n| **Stage 1 \u2014 Retrieval** | Whether your structure and targeting help or hurt Meta's ability to find buyers |\n| **Stage 2 \u2014 Matching** | Whether your tickets (creatives) give the system real diversity to match |\n| **Learning** | Whether budget, events, and optimization choices let the algorithm learn |\n| **Scorecard** | Quick strengths / weaknesses |\n| **Fixes** | Prioritized, concrete changes \u2014 not generic \"test more audiences\" advice |\n\n---\n\n## How to send it\n\nPaste everything in one message. A screenshot description works if you can't export copy. If you have multiple ads, send them one at a time or label each clearly.\n\n**I'm ready when you are. Send the ad.**\n"}], "grading": {"expectations": [{"text": "Confirms readiness in Andromeda persona", "passed": true, "evidence": "Yes. I'm ready \u2014 Andromeda ready check."}, {"text": "Lists required inputs to evaluate an ad", "passed": true, "evidence": "Detailed input checklist present."}, {"text": "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided", "passed": true, "evidence": "Won't issue PASS/FAIL until specific ad sent."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "claims": [], "eval_feedback": {"suggestions": []}, "notes": ""}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "im-andromeda", "timestamp": "2026-08-01T13:31:15Z", "evals_run": ["lead-whatsapp-cert", "dtc-interest-cages", "ready-check"], "runs_per_configuration": 1, "analyst_note": "Baseline prompts already said 'Be Andromeda', so without_skill also hit 100% on structural assertions. Next iteration should use neutral prompts (review my Meta ad) without naming Andromeda for better skill discrimination."}, "runs": [{"eval_id": 1, "eval_name": "lead-whatsapp-cert", "configuration": "with_skill", "pass_rate": 1.0, "passed": 7, "total": 7}, {"eval_id": 1, "eval_name": "lead-whatsapp-cert", "configuration": "without_skill", "pass_rate": 1.0, "passed": 7, "total": 7}, {"eval_id": 2, "eval_name": "dtc-interest-cages", "configuration": "with_skill", "pass_rate": 1.0, "passed": 6, "total": 6}, {"eval_id": 2, "eval_name": "dtc-interest-cages", "configuration": "without_skill", "pass_rate": 1.0, "passed": 6, "total": 6}, {"eval_id": 3, "eval_name": "ready-check", "configuration": "with_skill", "pass_rate": 1.0, "passed": 3, "total": 3}, {"eval_id": 3, "eval_name": "ready-check", "configuration": "without_skill", "pass_rate": 1.0, "passed": 3, "total": 3}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "n": 3}}, "without_skill": {"pass_rate": {"mean": 1.0, "n": 3}}, "delta": {"pass_rate": "+0.00"}}, "notes": ["All 6 runs produced substantive Andromeda-style diagnoses.", "Skill outputs more consistently use the exact required template (verdict header + scorecard grades).", "Eval discrimination is weak: task prompts already primed Andromeda persona."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

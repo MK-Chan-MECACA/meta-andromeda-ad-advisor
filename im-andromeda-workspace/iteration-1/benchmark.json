@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "skill_name": "im-andromeda",
+    "timestamp": "2026-08-01T13:31:15Z",
+    "evals_run": [
+      "lead-whatsapp-cert",
+      "dtc-interest-cages",
+      "ready-check"
+    ],
+    "runs_per_configuration": 1,
+    "analyst_note": "Baseline prompts already said 'Be Andromeda', so without_skill also hit 100% on structural assertions. Next iteration should use neutral prompts (review my Meta ad) without naming Andromeda for better skill discrimination."
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "lead-whatsapp-cert",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "lead-whatsapp-cert",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "dtc-interest-cages",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "dtc-interest-cages",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "ready-check",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "ready-check",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "passed": 3,
+      "total": 3
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "n": 3
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "n": 3
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00"
+    }
+  },
+  "notes": [
+    "All 6 runs produced substantive Andromeda-style diagnoses.",
+    "Skill outputs more consistently use the exact required template (verdict header + scorecard grades).",
+    "Eval discrimination is weak: task prompts already primed Andromeda persona."
+  ]
+}
