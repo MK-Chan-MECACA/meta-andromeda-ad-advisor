@@ -27,6 +27,37 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## SaaS setup
+
+### Billing (Stripe, MYR)
+
+1. In Stripe, create product **Andromeda Pro** with two recurring prices in **MYR**: RM 99 / month and RM 990 / year.
+2. Enable the **Customer Portal** (Settings → Billing → Customer portal): payment method update, invoice history, cancellation.
+3. Checkout offers **card** only: FPX and GrabPay can't be used for recurring subscription charges in Stripe.
+
+```bash
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_PRO_MONTHLY=price_...   # RM 99 / month
+STRIPE_PRICE_PRO_YEARLY=price_...    # RM 990 / year
+```
+
+### Webhooks
+
+| Endpoint | Source | Events |
+| --- | --- | --- |
+| `/api/webhooks/stripe` | Stripe → Developers → Webhooks (secret → `STRIPE_WEBHOOK_SECRET`) | `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed` |
+| `/api/webhooks/clerk` | Clerk → Webhooks (signing secret → `CLERK_WEBHOOK_SIGNING_SECRET`) | `organization.created`, `organization.deleted`, `user.deleted` |
+
+```bash
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
+BLOB_READ_WRITE_TOKEN=               # set by Vercel when a Blob store is connected; used to delete a workspace's thumbnails
+```
+
+Local testing: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
+
+Only workspace admins see **Upgrade** / **Manage billing**. Plan changes update the Clerk organization's max memberships (Free 1, Pro 5). Deleting a workspace hard-deletes its analyses, Meta connection, subscription row and Blob thumbnails, and cancels its Stripe subscription.
+
 ## How to use
 
 1. Drop creative images and/or Ads Manager screenshots (max 3 images, 4MB each).

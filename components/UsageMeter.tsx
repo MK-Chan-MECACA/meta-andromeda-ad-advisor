@@ -1,7 +1,15 @@
 import type { Entitlements } from "@/lib/entitlements";
+import { BillingButton } from "./BillingButton";
 
-/** Plan badge + analyses used this period. */
-export function UsageMeter({ entitlements: e }: { entitlements: Entitlements }) {
+/** Plan badge + analyses used this period; billing actions for admins only. */
+export function UsageMeter({
+  entitlements: e,
+  billing,
+}: {
+  entitlements: Entitlements;
+  /** Omitted for members. */
+  billing?: { canUpgrade: boolean; canManage: boolean };
+}) {
   const pct = Math.min(100, Math.round((e.used / e.quota) * 100));
   return (
     <div className="flex items-center gap-3 text-xs text-ink-300">
@@ -24,6 +32,7 @@ export function UsageMeter({ entitlements: e }: { entitlements: Entitlements }) 
           Over the {e.seats}-seat limit — remove members or upgrade.
         </span>
       ) : null}
+      {billing ? <BillingButton {...billing} /> : null}
     </div>
   );
 }
