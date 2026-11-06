@@ -108,8 +108,9 @@ async function graphRoute(req: NextRequest, action: string, arg?: string) {
 
     case "ads": {
       const accountId = q.get("account_id");
-      if (!accountId) {
-        return NextResponse.json({ error: "account_id required." }, { status: 400 });
+      // Only ad-account ids: the admin's token must not proxy arbitrary Graph paths.
+      if (!accountId || !/^act_\d+$/.test(accountId)) {
+        return NextResponse.json({ error: "Valid account_id required." }, { status: 400 });
       }
       const data = await graph<{ data: unknown[] }>(`${accountId}/ads`, token, {
         fields: AD_LIST_FIELDS,
@@ -119,8 +120,8 @@ async function graphRoute(req: NextRequest, action: string, arg?: string) {
     }
 
     case "ad": {
-      if (!arg) {
-        return NextResponse.json({ error: "ad id required." }, { status: 400 });
+      if (!arg || !/^\d+$/.test(arg)) {
+        return NextResponse.json({ error: "Valid ad id required." }, { status: 400 });
       }
       const currency = q.get("currency") ?? "";
       const ad = await graph<Json>(arg, token, { fields: AD_DETAIL_FIELDS });

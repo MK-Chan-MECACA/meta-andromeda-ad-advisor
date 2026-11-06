@@ -10,7 +10,7 @@ import {
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
 import { sql } from "@/lib/db";
-import { modelFor } from "@/lib/entitlements";
+import { fallbackFor, modelFor } from "@/lib/entitlements";
 import {
   handle,
   requireWorkspace,
@@ -76,7 +76,13 @@ export const POST = handle(async (req: Request) => {
         error:
           ent.reason === "seats"
             ? `This workspace has more members than its ${ent.plan} plan allows (${ent.seats}). An admin can remove members or upgrade.`
-            : `You've used all ${ent.quota} analyses for this period on the ${ent.plan} plan. Upgrade to continue.`,
+            : `You've used all ${ent.quota} analyses for this period on the ${ent.plan} plan. ${
+                ent.plan === "pro"
+                  ? "Your quota resets on the next renewal day."
+                  : ws.isAdmin
+                    ? "Use Upgrade in the top bar to continue."
+                    : "Ask a workspace admin to upgrade."
+              }`,
         reason: ent.reason,
       },
       { status: 402 },
@@ -105,9 +111,9 @@ export const POST = handle(async (req: Request) => {
   }
 
   try {
-    // AI Gateway: plan model first, the other plan's model as fallback.
+    // AI Gateway: plan model first, plan-appropriate fallback on provider failure.
     const model = modelFor(ent.plan);
-    const fallback = modelFor(ent.plan === "pro" ? "free" : "pro");
+    const fallback = fallbackFor(ent.plan);
     const { output: object, usage, response } = await generateText({
       model,
       output: Output.object({ schema: analysisResultSchema }),
@@ -119,16 +125,22 @@ export const POST = handle(async (req: Request) => {
       },
     });
 
-    // Only successful analyses are stored, so only they count toward quota.
+    // Only successful analyses are stored and metered. The usage ledger is
+    // separate so deleting an analysis doesn't refund quota.
     const [row] = await sql`
-      insert into analyses (workspace_id, created_by, input, result, model, total_tokens, meta_ad_id)
-      values (
-        ${ws.workspaceId}, ${ws.userId},
-        ${JSON.stringify({ copy: data.copy, setup: data.setup, metrics: data.metrics, imageLabels })},
-        ${JSON.stringify(object)}, ${response.modelId},
-        ${usage.totalTokens ?? null}, ${data.metaAdId ?? null}
+      with saved as (
+        insert into analyses (workspace_id, created_by, input, result, model, total_tokens, meta_ad_id)
+        values (
+          ${ws.workspaceId}, ${ws.userId},
+          ${JSON.stringify({ copy: data.copy, setup: data.setup, metrics: data.metrics, imageLabels })},
+          ${JSON.stringify(object)}, ${response.modelId},
+          ${usage.totalTokens ?? null}, ${data.metaAdId ?? null}
+        )
+        returning id
+      ), metered as (
+        insert into usage_events (workspace_id) values (${ws.workspaceId})
       )
-      returning id`;
+      select id from saved`;
 
     return NextResponse.json({ analysis: object, id: row.id });
   } catch (err) {

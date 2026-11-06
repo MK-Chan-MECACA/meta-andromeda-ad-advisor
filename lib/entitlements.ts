@@ -22,10 +22,25 @@ export function effectivePlan(sub: SubscriptionState): Plan {
   return sub?.plan === "pro" && ACTIVE.has(sub.status) ? "pro" : "free";
 }
 
-/** Start of the current quota period: Stripe period for Pro, MYT calendar month for Free. */
+/** `start` + n calendar months (UTC), day clamped to the target month's length. */
+function addMonths(start: Date, n: number): Date {
+  const y = start.getUTCFullYear();
+  const m = start.getUTCMonth() + n;
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const d = new Date(start);
+  d.setUTCFullYear(y, m, Math.min(start.getUTCDate(), lastDay));
+  return d;
+}
+
+/**
+ * Start of the current quota period. Pro: monthly anniversary of the Stripe
+ * period start (so yearly plans still get a monthly quota). Free: MYT calendar month.
+ */
 export function periodStart(sub: SubscriptionState, now: Date = new Date()): Date {
   if (effectivePlan(sub) === "pro" && sub?.currentPeriodStart) {
-    return sub.currentPeriodStart;
+    let n = 0;
+    while (addMonths(sub.currentPeriodStart, n + 1) <= now) n++;
+    return addMonths(sub.currentPeriodStart, n);
   }
   const local = new Date(now.getTime() + MYT_OFFSET_MS);
   return new Date(
@@ -72,4 +87,14 @@ export function modelFor(
   return plan === "pro"
     ? env.MODEL_PRO || "spacexai/grok-4.7"
     : env.MODEL_FREE || "anthropic/claude-haiku-5.5";
+}
+
+/** Gateway fallback: Pro degrades to the Free model; Free to another cheap provider, never to Pro. */
+export function fallbackFor(
+  plan: Plan,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  return plan === "pro"
+    ? modelFor("free", env)
+    : env.MODEL_FALLBACK || "google/gemini-3.5-flash-lite";
 }

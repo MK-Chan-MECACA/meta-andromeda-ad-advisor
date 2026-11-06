@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace";
+import { requireWorkspace, isUuid } from "@/lib/workspace";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import { DeleteAnalysisButton } from "./DeleteAnalysisButton";
 
-const UUID = /^[0-9a-f-]{36}$/i;
 
 export default async function AnalysisPage({
   params,
@@ -15,7 +14,7 @@ export default async function AnalysisPage({
 }) {
   const ws = await requireWorkspace();
   const { id } = await params;
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const [row] = await sql`
     select id, created_at, created_by, model, result, thumbnail_url
     from analyses where id = ${id}::uuid and workspace_id = ${ws.workspaceId}`;

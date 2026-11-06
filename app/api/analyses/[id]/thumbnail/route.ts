@@ -1,16 +1,15 @@
 import { get, put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { handle, httpError, requireWorkspace } from "@/lib/workspace";
+import { handle, httpError, requireWorkspace, isUuid } from "@/lib/workspace";
 
-const UUID = /^[0-9a-f-]{36}$/i;
 const MAX_BYTES = 200 * 1024;
 
 type Ctx = { params: Promise<{ id: string }> };
 
 async function analysisId(ctx: Ctx): Promise<string> {
   const { id } = await ctx.params;
-  if (!UUID.test(id)) throw httpError(404, "Analysis not found.");
+  if (!isUuid(id)) throw httpError(404, "Analysis not found.");
   return id;
 }
 
@@ -57,7 +56,7 @@ export const GET = handle(async (_req: Request, ctx: Ctx) => {
   return new Response(blob.stream, {
     headers: {
       "Content-Type": blob.blob.contentType,
-      "Cache-Control": "private, max-age=86400",
+      "Cache-Control": "private, max-age=300",
     },
   });
 });

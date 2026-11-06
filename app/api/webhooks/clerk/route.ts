@@ -4,6 +4,7 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { del, list } from "@vercel/blob";
 import { sql } from "@/lib/db";
 import { PLANS } from "@/lib/entitlements";
+import { deleteConnection } from "@/lib/meta";
 import { billingRow, hasLiveSubscription, stripe } from "@/lib/stripe";
 
 /** Clerk lifecycle: seat limit on new workspaces, hard delete on removal. */
@@ -29,10 +30,18 @@ export async function POST(req: NextRequest) {
       // Cancel first: if this fails, the row survives and Clerk's retry tries again.
       const row = await billingRow(workspaceId);
       if (hasLiveSubscription(row)) {
-        await stripe().subscriptions.cancel(row.stripe_subscription_id);
+        try {
+          await stripe().subscriptions.cancel(row.stripe_subscription_id);
+        } catch (err) {
+          // Already canceled / missing in Stripe (our row was stale): don't let
+          // that block the hard delete forever. Other errors retry via Clerk.
+          if ((err as { type?: string }).type !== "StripeInvalidRequestError") throw err;
+          console.warn("[clerk webhook] stripe cancel skipped", err);
+        }
       }
       await sql`delete from analyses where workspace_id = ${workspaceId}`;
-      await sql`delete from meta_connections where workspace_id = ${workspaceId}`;
+      await sql`delete from usage_events where workspace_id = ${workspaceId}`;
+      await deleteConnection(workspaceId);
       await sql`delete from subscriptions where workspace_id = ${workspaceId}`;
       // ponytail: skipped when Blob isn't connected yet (thumbnails ship in phase 5).
       if (process.env.BLOB_READ_WRITE_TOKEN) {

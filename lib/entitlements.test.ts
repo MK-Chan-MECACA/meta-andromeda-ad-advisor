@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { entitlements, periodStart, modelFor } from "./entitlements.ts";
+import { entitlements, periodStart, modelFor, fallbackFor } from "./entitlements.ts";
 
 const now = new Date("2026-11-06T12:00:00Z");
 const pro = (status = "active", start = "2026-10-20T03:00:00Z") => ({
@@ -26,6 +26,28 @@ test("free period starts at calendar month in Malaysia time", () => {
 
 test("pro period starts at Stripe current_period_start", () => {
   assert.equal(periodStart(pro(), now).toISOString(), "2026-10-20T03:00:00.000Z");
+});
+
+test("yearly pro resets monthly on the renewal day, not once a year", () => {
+  const yearly = pro("active", "2026-01-15T03:00:00Z");
+  assert.equal(periodStart(yearly, now).toISOString(), "2026-10-15T03:00:00.000Z");
+  // exactly on the anniversary starts the new month
+  assert.equal(
+    periodStart(yearly, new Date("2026-11-15T03:00:00Z")).toISOString(),
+    "2026-11-15T03:00:00.000Z",
+  );
+});
+
+test("pro renewal on the 31st clamps to short months", () => {
+  const p = pro("active", "2026-01-31T00:00:00Z");
+  assert.equal(
+    periodStart(p, new Date("2026-03-05T00:00:00Z")).toISOString(),
+    "2026-02-28T00:00:00.000Z",
+  );
+  assert.equal(
+    periodStart(p, new Date("2026-04-01T00:00:00Z")).toISOString(),
+    "2026-03-31T00:00:00.000Z",
+  );
 });
 
 test("free workspace allowed under quota, blocked at quota", () => {
@@ -67,4 +89,10 @@ test("model per plan from config with defaults", () => {
   assert.equal(modelFor("pro", { MODEL_PRO: "x/y" }), "x/y");
   assert.equal(modelFor("free", { MODEL_FREE: "a/b" }), "a/b");
   assert.ok(modelFor("free", {}).length > 0);
+});
+
+test("free never falls back to the pro model (cost)", () => {
+  assert.notEqual(fallbackFor("free", {}), modelFor("pro", {}));
+  assert.equal(fallbackFor("free", { MODEL_FALLBACK: "c/d" }), "c/d");
+  assert.equal(fallbackFor("pro", { MODEL_FREE: "a/b" }), "a/b");
 });

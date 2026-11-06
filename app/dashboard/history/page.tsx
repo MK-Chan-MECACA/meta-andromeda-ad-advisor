@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { clerkClient } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { requireWorkspace } from "@/lib/workspace";
 
@@ -17,6 +18,18 @@ export default async function HistoryPage() {
            input->'copy'->>'headline' as headline
     from analyses where workspace_id = ${ws.workspaceId}
     order by created_at desc limit 100`;
+
+  // Author display names (deleted users fall back to "former member").
+  const ids = [...new Set(rows.map((r) => r.created_by as string).filter(Boolean))];
+  const users = ids.length
+    ? (await (await clerkClient()).users.getUserList({ userId: ids, limit: 100 })).data
+    : [];
+  const authorName = (id: string | null) => {
+    if (!id) return "former member";
+    if (id === ws.userId) return "you";
+    const u = users.find((x) => x.id === id);
+    return u?.fullName || u?.primaryEmailAddress?.emailAddress || "member";
+  };
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8">
@@ -53,7 +66,8 @@ export default async function HistoryPage() {
                   </p>
                   <p className="text-xs text-ink-400">
                     {new Date(r.created_at as string).toLocaleString("en-MY")}
-                    {r.created_by === ws.userId ? " · you" : ""}
+                    {" · "}
+                    {authorName(r.created_by as string | null)}
                   </p>
                 </div>
                 <span

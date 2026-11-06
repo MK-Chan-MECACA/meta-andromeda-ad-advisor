@@ -26,6 +26,9 @@ export function httpError(status: number, error: string): HttpError {
   return new HttpError(NextResponse.json({ error }, { status }));
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isUuid = (id: string) => UUID.test(id);
+
 /** Signed-in user + active workspace, or a 401/403 HttpError. */
 export async function requireWorkspace(
   opts: { admin?: boolean } = {},
@@ -78,7 +81,7 @@ export async function workspaceEntitlements(
   const subscription = await loadSubscription(workspaceId);
   const start = periodStart(subscription);
   const [countRows, members] = await Promise.all([
-    sql`select count(*)::int as n from analyses
+    sql`select count(*)::int as n from usage_events
         where workspace_id = ${workspaceId} and created_at >= ${start.toISOString()}`,
     clerkClient().then((c) =>
       c.organizations.getOrganizationMembershipList({

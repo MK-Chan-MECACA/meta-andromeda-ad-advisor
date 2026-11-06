@@ -36,3 +36,12 @@ create table if not exists meta_connections (
   created_at       timestamptz not null default now()
 );
 create index if not exists meta_connections_fb_user_idx on meta_connections (fb_user_id);
+
+-- Quota ledger: one row per successful analysis. Separate from analyses so
+-- deleting an analysis does not refund quota.
+create table if not exists usage_events (
+  workspace_id text not null,
+  created_at   timestamptz not null default now()
+);
+create index if not exists usage_events_workspace_created_idx
+  on usage_events (workspace_id, created_at);

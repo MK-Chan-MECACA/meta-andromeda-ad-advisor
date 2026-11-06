@@ -1,13 +1,14 @@
 import { del } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { handle, httpError, requireWorkspace } from "@/lib/workspace";
+import { handle, httpError, isUuid, requireWorkspace } from "@/lib/workspace";
 
 /** Members delete their own analyses; admins delete any in the workspace. */
 export const DELETE = handle(
   async (_req: Request, ctx: { params: Promise<{ id: string }> }) => {
     const ws = await requireWorkspace();
     const { id } = await ctx.params;
+    if (!isUuid(id)) throw httpError(404, "Analysis not found.");
     const rows = await sql`
       delete from analyses
       where id = ${id}::uuid and workspace_id = ${ws.workspaceId}
