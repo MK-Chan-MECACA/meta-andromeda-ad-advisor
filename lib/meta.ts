@@ -1,22 +1,26 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { sql } from "@/lib/db";
+import { seal, unseal } from "@/lib/seal";
 import { emptyIntakeForm, type IntakeFormState } from "@/lib/types";
-
-export const SESSION_COOKIE = "meta_session";
+import { httpError, type Workspace } from "@/lib/workspace";
 
 const GRAPH_VERSION = process.env.GRAPH_API_VERSION ?? "v25.0";
 const GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
+
+export const RECONNECT_MESSAGE =
+  "Meta connection expired or was revoked. Reconnect Meta (ask a workspace admin).";
 
 export function metaEnv() {
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
   const configId = process.env.META_CONFIG_ID;
-  const secret = process.env.SESSION_SECRET;
-  if (!appId || !appSecret || !secret) {
+  const tokenKey = process.env.META_TOKEN_KEY;
+  if (!appId || !appSecret || !tokenKey) {
     throw new Error(
-      "Missing META_APP_ID / META_APP_SECRET / SESSION_SECRET. See README.",
+      "Missing META_APP_ID / META_APP_SECRET / META_TOKEN_KEY. See README.",
     );
   }
-  return { appId, appSecret, configId, secret };
+  return { appId, appSecret, configId, tokenKey };
 }
 
 export function redirectUri(req: Request) {
@@ -26,66 +30,101 @@ export function redirectUri(req: Request) {
   );
 }
 
-/* ---------- signed cookie session ---------- */
+/* ---------- OAuth state (CSRF) ---------- */
 
 function sign(value: string, secret: string) {
   return createHmac("sha256", secret).update(value).digest("base64url");
 }
 
-export function sealSession(token: string, expiresInSec: number) {
-  const { secret } = metaEnv();
+/**
+ * Self-contained CSRF state — no cookie required (survives Facebook redirects).
+ * Bound to the admin + workspace that started the flow, so a state minted by
+ * someone else (or for another workspace) is rejected at the callback.
+ */
+export function createOAuthState(ws: Workspace, ttlMs = 10 * 60 * 1000) {
   const payload = Buffer.from(
-    JSON.stringify({ t: token, e: Date.now() + expiresInSec * 1000 }),
+    JSON.stringify({
+      n: randomBytes(16).toString("hex"),
+      e: Date.now() + ttlMs,
+      u: ws.userId,
+      w: ws.workspaceId,
+    }),
   ).toString("base64url");
-  return `${payload}.${sign(payload, secret)}`;
+  return `${payload}.${sign(payload, metaEnv().appSecret)}`;
 }
 
-export function openSession(cookie: string | undefined): string | null {
-  if (!cookie) return null;
-  const [payload, sig] = cookie.split(".");
-  if (!payload || !sig) return null;
-
-  const expected = sign(payload, metaEnv().secret);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-
-  try {
-    const { t, e } = JSON.parse(Buffer.from(payload, "base64url").toString());
-    return typeof t === "string" && typeof e === "number" && e > Date.now()
-      ? t
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Self-contained CSRF state — no cookie required (survives Facebook redirects). */
-export function createOAuthState(ttlMs = 10 * 60 * 1000) {
-  const { secret } = metaEnv();
-  const payload = Buffer.from(
-    JSON.stringify({ n: randomBytes(16).toString("hex"), e: Date.now() + ttlMs }),
-  ).toString("base64url");
-  return `${payload}.${sign(payload, secret)}`;
-}
-
-export function verifyOAuthState(state: string | null): boolean {
+export function verifyOAuthState(state: string | null, ws: Workspace): boolean {
   if (!state) return false;
   const [payload, sig] = state.split(".");
   if (!payload || !sig) return false;
 
-  const expected = sign(payload, metaEnv().secret);
+  const expected = sign(payload, metaEnv().appSecret);
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
 
   try {
-    const { e } = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
-      e?: number;
-    };
-    return typeof e === "number" && e > Date.now();
+    const { e, u, w } = JSON.parse(Buffer.from(payload, "base64url").toString());
+    return (
+      typeof e === "number" &&
+      e > Date.now() &&
+      u === ws.userId &&
+      w === ws.workspaceId
+    );
   } catch {
     return false;
+  }
+}
+
+/* ---------- workspace connection (token encrypted at rest) ---------- */
+
+export async function saveConnection(
+  ws: Workspace,
+  token: string,
+  expiresIn: number,
+  fbUserId: string,
+) {
+  const ciphertext = seal(token, metaEnv().tokenKey);
+  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+  await sql`
+    insert into meta_connections
+      (workspace_id, connected_by, fb_user_id, token_ciphertext, expires_at)
+    values (${ws.workspaceId}, ${ws.userId}, ${fbUserId}, ${ciphertext}, ${expiresAt})
+    on conflict (workspace_id) do update set
+      connected_by = excluded.connected_by,
+      fb_user_id = excluded.fb_user_id,
+      token_ciphertext = excluded.token_ciphertext,
+      expires_at = excluded.expires_at,
+      created_at = now()`;
+}
+
+export async function deleteConnection(workspaceId: string) {
+  await sql`delete from meta_connections where workspace_id = ${workspaceId}`;
+}
+
+export async function loadConnection(workspaceId: string) {
+  const rows = await sql`
+    select connected_by, token_ciphertext, expires_at
+    from meta_connections where workspace_id = ${workspaceId}`;
+  return rows[0] as
+    | { connected_by: string; token_ciphertext: string; expires_at: string | null }
+    | undefined;
+}
+
+/** The workspace's Graph token, or a 401 HttpError asking for a reconnect. */
+export async function workspaceToken(workspaceId: string): Promise<string> {
+  const row = await loadConnection(workspaceId);
+  if (!row) {
+    throw httpError(401, "Meta is not connected. Ask a workspace admin to connect it.");
+  }
+  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) {
+    throw httpError(401, RECONNECT_MESSAGE);
+  }
+  try {
+    return unseal(row.token_ciphertext, metaEnv().tokenKey);
+  } catch {
+    // Key rotated or row corrupted — the only fix is a fresh connection.
+    throw httpError(401, RECONNECT_MESSAGE);
   }
 }
 
@@ -108,10 +147,13 @@ export async function graph<T = Record<string, unknown>>(
   const res = await fetch(url, { cache: "no-store" });
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(
-      (json as { error?: { message?: string } })?.error?.message ??
-        `Graph error ${res.status}`,
-    );
+    const error = (json as { error?: { message?: string; code?: number } })
+      ?.error;
+    // 190 = token expired/invalid/revoked; 102 = session invalid.
+    if (error?.code === 190 || error?.code === 102) {
+      throw httpError(401, RECONNECT_MESSAGE);
+    }
+    throw new Error(error?.message ?? `Graph error ${res.status}`);
   }
   return json as T;
 }

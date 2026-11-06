@@ -22,6 +22,14 @@ type AdRow = {
 type ImportResponse = Omit<IntakeFormState, "images"> & {
   image: string | null;
   name: string;
+  id: string;
+};
+
+type MetaStatus = {
+  connected: boolean;
+  connectedBy: string | null;
+  expiresAt: string | null;
+  isAdmin: boolean;
 };
 
 const btn =
@@ -53,7 +61,8 @@ export function MetaImportPanel({
   form: IntakeFormState;
   onChange: (next: IntakeFormState) => void;
 }) {
-  const [connected, setConnected] = useState<boolean | null>(null);
+  const [status, setStatus] = useState<MetaStatus | null>(null);
+  const connected = status ? status.connected : null;
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [accountId, setAccountId] = useState("");
   const [ads, setAds] = useState<AdRow[]>([]);
@@ -73,11 +82,11 @@ export function MetaImportPanel({
         window.history.replaceState({}, "", clean.pathname);
       }
       try {
-        const status = (await (await fetch("/api/meta/status")).json()) as {
-          connected: boolean;
-        };
+        const res = await fetch("/api/meta/status");
+        const status = (await res.json()) as MetaStatus & { error?: string };
         if (cancelled) return;
-        setConnected(status.connected);
+        if (!res.ok) throw new Error(status.error);
+        setStatus(status);
         if (urlError) setError(urlError);
         if (!status.connected) {
           writeStoredAccountId("");
@@ -101,18 +110,19 @@ export function MetaImportPanel({
               ? list[0].id
               : "";
         if (restore) await loadAds(restore);
-      } catch {
+      } catch (err) {
         if (cancelled) return;
-        setConnected(false);
-        setError(urlError ?? "Could not reach Meta.");
+        setError(
+          urlError ??
+            (err instanceof Error && err.message ? err.message : "Could not reach Meta."),
+        );
       }
     })();
 
     return () => {
       cancelled = true;
     };
-    // loadAds is stable enough for mount restore; intentional once-on-mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally once-on-mount (restores the saved ad account).
   }, []);
 
   const loadingAccounts = connected === true && !accounts.length && !error;
@@ -133,6 +143,29 @@ export function MetaImportPanel({
       setAds(data.ads ?? []);
     } catch {
       setError("Could not load ads.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function disconnect() {
+    if (!confirm("Disconnect Meta for the whole workspace?")) return;
+    setBusy("disconnect");
+    setError(null);
+    try {
+      const res = await fetch("/api/meta/disconnect", { method: "POST" });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Disconnect failed.");
+        return;
+      }
+      writeStoredAccountId("");
+      setStatus((s) => s && { ...s, connected: false, connectedBy: null, expiresAt: null });
+      setAccounts([]);
+      setAccountId("");
+      setAds([]);
+    } catch {
+      setError("Disconnect failed.");
     } finally {
       setBusy(null);
     }
@@ -172,6 +205,7 @@ export function MetaImportPanel({
         copy: data.copy,
         setup: data.setup,
         metrics: data.metrics,
+        metaAdId: data.id,
       });
     } catch {
       setError("Import failed.");
@@ -187,33 +221,57 @@ export function MetaImportPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
+          <h3 className="flex items-center gap-2 font-display text-sm tracking-wide text-ink-100 uppercase">
             Import from Meta
+            <span
+              className="border border-warn/50 px-1.5 py-0.5 text-[10px] tracking-widest text-warn"
+              title="Limited to Meta app testers until Meta App Review is approved."
+            >
+              Beta
+            </span>
           </h3>
           <p className="mt-1 text-xs text-ink-500">
             Pull a live ad&apos;s creative, setup, and last-7-day metrics
             straight into the form.
           </p>
+          {status?.connected ? (
+            <p className="mt-1 text-xs text-ink-400">
+              Connected{status.connectedBy ? ` by ${status.connectedBy}` : ""}
+              {status.expiresAt
+                ? ` · expires ${new Date(status.expiresAt).toLocaleDateString()}`
+                : ""}
+            </p>
+          ) : null}
         </div>
 
         {/* Route handlers, not pages — <Link> client nav would break the OAuth redirect. */}
         {/* eslint-disable @next/next/no-html-link-for-pages */}
-        {connected === null ? null : connected ? (
-          <a
-            className={btn}
-            href="/api/meta/logout"
-            onClick={() => writeStoredAccountId("")}
-          >
-            Disconnect
-          </a>
-        ) : (
-          <a
-            className="inline-flex items-center justify-center bg-meta px-5 py-2.5 font-display text-xs tracking-wide text-white uppercase transition hover:bg-meta-bright"
-            href="/api/meta/login"
-          >
-            Connect Meta
-          </a>
-        )}
+        {!status ? null : status.isAdmin ? (
+          <div className="flex gap-2">
+            <a
+              className={
+                status.connected
+                  ? btn
+                  : "inline-flex items-center justify-center bg-meta px-5 py-2.5 font-display text-xs tracking-wide text-white uppercase transition hover:bg-meta-bright"
+              }
+              href="/api/meta/login"
+            >
+              {status.connected ? "Reconnect" : "Connect Meta"}
+            </a>
+            {status.connected ? (
+              <button
+                type="button"
+                className={btn}
+                disabled={busy !== null}
+                onClick={() => void disconnect()}
+              >
+                Disconnect
+              </button>
+            ) : null}
+          </div>
+        ) : !status.connected ? (
+          <p className="text-xs text-ink-400">Ask a workspace admin to connect Meta.</p>
+        ) : null}
         {/* eslint-enable @next/next/no-html-link-for-pages */}
       </div>
 

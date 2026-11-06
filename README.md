@@ -96,15 +96,15 @@ META_APP_ID=
 META_APP_SECRET=
 META_CONFIG_ID=          # Login for Business configuration ID
 META_REDIRECT_URI=       # optional; defaults to <origin>/api/meta/callback
-SESSION_SECRET=          # openssl rand -hex 32
+META_TOKEN_KEY=          # openssl rand -base64 32 (encrypts stored tokens)
 GRAPH_API_VERSION=v25.0
 ```
 
 Set the same vars in Vercel (Project → Settings → Environment Variables) and redeploy.
 
-The Meta access token lives only in a signed, httpOnly `meta_session` cookie — no user database.
+One Meta connection per workspace: an admin connects, every member imports. The long-lived token is stored AES-256-GCM-encrypted in `meta_connections` (see SaaS setup below).
 
-Routes: `/api/meta/{login,callback,logout,status,accounts,ads,ad/<id>}` ([app/api/meta/[...path]/route.ts](app/api/meta/%5B...path%5D/route.ts)), helpers in [lib/meta.ts](lib/meta.ts).
+Routes: `/api/meta/{login,callback,status,accounts,ads,ad/<id>}` + `POST /api/meta/disconnect` ([app/api/meta/[...path]/route.ts](app/api/meta/%5B...path%5D/route.ts)), helpers in [lib/meta.ts](lib/meta.ts).
 
 ### Production note
 
@@ -141,3 +141,13 @@ No App ID or App Secret goes in the MCP config — auth is OAuth only.
 - “Health-check app `{app_id}`”
 - “Set up webhooks for … on app `{app_id}`”
 - “Check compliance / App Review readiness for …”
+
+## SaaS setup
+
+### Meta connection per workspace (phase 4)
+
+- **Env:** `META_TOKEN_KEY` — 32-byte AES-256-GCM key for Meta tokens stored in `meta_connections`. Generate with `openssl rand -base64 32`. Rotating it invalidates stored tokens; admins then reconnect. `SESSION_SECRET` is no longer used (OAuth `state` is signed with `META_APP_SECRET` and bound to the admin + workspace).
+- **Meta app → Facebook Login for Business → Settings:** Valid OAuth Redirect URI `https://<domain>/api/meta/callback`.
+- **Meta app → Settings → Basic:** Data Deletion Callback URL `https://<domain>/api/meta/deletion` (deletes every workspace connection made by that Facebook user).
+- **Roles:** only workspace admins (`org:admin`) can connect/disconnect; all members can list ad accounts/ads and import. Expired or revoked tokens return 401 "reconnect Meta (ask a workspace admin)".
+- **Beta:** until App Review passes, only users with a role on the Meta app (Admin/Developer/Tester) can connect. Meta enforces this; the panel shows a Beta badge.

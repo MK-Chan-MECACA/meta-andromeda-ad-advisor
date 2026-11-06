@@ -73,6 +73,7 @@ export function Workbench() {
           copy: form.copy,
           setup: form.setup,
           metrics: form.metrics,
+          metaAdId: form.metaAdId,
         }),
       });
 
