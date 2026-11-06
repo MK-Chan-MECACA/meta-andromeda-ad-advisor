@@ -1,3 +1,4 @@
+import { del } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { handle, httpError, requireWorkspace } from "@/lib/workspace";
@@ -13,6 +14,12 @@ export const DELETE = handle(
         and (${ws.isAdmin} or created_by = ${ws.userId})
       returning id, thumbnail_url`;
     if (!rows[0]) throw httpError(404, "Analysis not found.");
+    if (rows[0].thumbnail_url) {
+      // Row is already gone; an orphan blob is swept by the workspace-deletion webhook.
+      await del(rows[0].thumbnail_url as string).catch((err) =>
+        console.warn("Thumbnail blob delete failed:", err),
+      );
+    }
     return NextResponse.json({ deleted: id });
   },
 );
