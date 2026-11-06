@@ -7,6 +7,7 @@ import { MetaImportPanel } from "@/components/MetaImportPanel";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { IconLoader, IconSpark } from "@/components/Icons";
 import type { AnalysisResult } from "@/lib/analysis-schema";
+import { uploadThumbnail } from "@/lib/thumbnail";
 import {
   emptyIntakeForm,
   type AnalyzeResponse,
@@ -89,6 +90,7 @@ export function Workbench() {
       }
 
       setAnalysis(data.analysis);
+      if (form.images[0]) uploadThumbnail(data.id, form.images[0].dataUrl);
       router.refresh(); // update usage meter
       requestAnimationFrame(() => {
         resultsRef.current?.scrollIntoView({

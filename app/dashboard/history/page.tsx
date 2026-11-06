@@ -40,7 +40,7 @@ export default async function HistoryPage() {
                 {r.thumbnail_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={`/api/thumbnails/${r.id}`}
+                    src={`/api/analyses/${r.id}/thumbnail`}
                     alt=""
                     className="h-12 w-12 rounded-lg object-cover"
                   />

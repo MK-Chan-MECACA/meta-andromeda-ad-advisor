@@ -17,7 +17,7 @@ export default async function AnalysisPage({
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const [row] = await sql`
-    select id, created_at, created_by, model, result
+    select id, created_at, created_by, model, result, thumbnail_url
     from analyses where id = ${id}::uuid and workspace_id = ${ws.workspaceId}`;
   if (!row) notFound();
   const canDelete = ws.isAdmin || row.created_by === ws.userId;
@@ -28,6 +28,14 @@ export default async function AnalysisPage({
         <Link href="/dashboard/history" className="hover:text-ink-50">
           ← History
         </Link>
+        {row.thumbnail_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/analyses/${id}/thumbnail`}
+            alt=""
+            className="h-10 w-10 rounded-lg object-cover"
+          />
+        ) : null}
         <span>{new Date(row.created_at as string).toLocaleString("en-MY")}</span>
         <span className="font-code text-xs">{row.model as string}</span>
         {canDelete ? (
