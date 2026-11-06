@@ -1,5 +1,4 @@
-import { xai } from "@ai-sdk/xai";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import {
   analyzeRequestSchema,
@@ -11,6 +10,7 @@ import {
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
 import { sql } from "@/lib/db";
+import { modelFor } from "@/lib/entitlements";
 import {
   handle,
   requireWorkspace,
@@ -69,16 +69,6 @@ export const POST = handle(async (req: Request) => {
     }
   }
 
-  if (!process.env.XAI_API_KEY) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing XAI_API_KEY. Add it to .env.local and restart the dev server.",
-      },
-      { status: 500 },
-    );
-  }
-
   const ent = await workspaceEntitlements(ws.workspaceId);
   if (!ent.allowed) {
     return NextResponse.json(
@@ -115,26 +105,28 @@ export const POST = handle(async (req: Request) => {
   }
 
   try {
-    const { object } = await generateObject({
-      model: xai.responses("grok-4.5"),
-      schema: analysisResultSchema,
-      system: ANDROMEDA_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content,
-        },
-      ],
+    // AI Gateway: plan model first, the other plan's model as fallback.
+    const model = modelFor(ent.plan);
+    const fallback = modelFor(ent.plan === "pro" ? "free" : "pro");
+    const { output: object, usage, response } = await generateText({
+      model,
+      output: Output.object({ schema: analysisResultSchema }),
+      instructions: ANDROMEDA_SYSTEM_PROMPT,
+      messages: [{ role: "user", content }],
       temperature: 0.3,
+      providerOptions: {
+        gateway: { models: [fallback], user: ws.workspaceId, tags: [ent.plan] },
+      },
     });
 
     // Only successful analyses are stored, so only they count toward quota.
     const [row] = await sql`
-      insert into analyses (workspace_id, created_by, input, result, model, meta_ad_id)
+      insert into analyses (workspace_id, created_by, input, result, model, total_tokens, meta_ad_id)
       values (
         ${ws.workspaceId}, ${ws.userId},
         ${JSON.stringify({ copy: data.copy, setup: data.setup, metrics: data.metrics, imageLabels })},
-        ${JSON.stringify(object)}, ${"xai/grok-4.5"}, ${data.metaAdId ?? null}
+        ${JSON.stringify(object)}, ${response.modelId},
+        ${usage.totalTokens ?? null}, ${data.metaAdId ?? null}
       )
       returning id`;
 
@@ -144,7 +136,7 @@ export const POST = handle(async (req: Request) => {
       err instanceof Error ? err.message : "Analysis failed unexpectedly.";
     console.error("[analyze]", err);
     return NextResponse.json(
-      { error: `Grok analysis failed: ${message}` },
+      { error: `Analysis failed: ${message}` },
       { status: 502 },
     );
   }
