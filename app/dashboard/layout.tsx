@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { PLANS } from "@/lib/entitlements";
+import { billingRow, hasLiveSubscription } from "@/lib/stripe";
 import { workspaceEntitlements } from "@/lib/workspace";
 import { UsageMeter } from "@/components/UsageMeter";
 import { ActivateWorkspace } from "./ActivateWorkspace";
@@ -29,11 +30,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userId, orgId } = await auth.protect();
+  const { userId, orgId, orgRole } = await auth.protect();
   const ws = await activeWorkspace(userId, orgId);
   if (ws.pending) return <ActivateWorkspace organizationId={ws.pending} />;
 
-  const ent = await workspaceEntitlements(ws.orgId!);
+  const isAdmin = orgRole === "org:admin";
+  const [ent, row] = await Promise.all([
+    workspaceEntitlements(ws.orgId!),
+    isAdmin ? billingRow(ws.orgId!) : undefined,
+  ]);
+  // Past-due subs are fixed in the portal, so they get Manage, not Upgrade.
+  const billing = isAdmin
+    ? {
+        canUpgrade: ent.plan === "free" && !hasLiveSubscription(row),
+        canManage: !!row?.stripe_customer_id,
+      }
+    : undefined;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -53,7 +65,7 @@ export default async function DashboardLayout({
           History
         </Link>
         <div className="ml-auto flex items-center gap-4">
-          <UsageMeter entitlements={ent} />
+          <UsageMeter entitlements={ent} billing={billing} />
           <UserButton />
         </div>
       </nav>
