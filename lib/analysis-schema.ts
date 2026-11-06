@@ -154,6 +154,7 @@ export const analyzeRequestSchema = z.object({
   copy: copySchema,
   setup: setupSchema,
   metrics: metricsSchema,
+  metaAdId: z.string().max(64).optional(),
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;

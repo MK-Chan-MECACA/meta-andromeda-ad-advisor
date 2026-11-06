@@ -10,6 +10,12 @@ import {
   ANDROMEDA_SYSTEM_PROMPT,
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
+import { sql } from "@/lib/db";
+import {
+  handle,
+  requireWorkspace,
+  workspaceEntitlements,
+} from "@/lib/workspace";
 
 export const maxDuration = 120;
 
@@ -18,7 +24,9 @@ function estimateDataUrlBytes(dataUrl: string): number {
   return Math.floor((base64.length * 3) / 4);
 }
 
-export async function POST(req: Request) {
+export const POST = handle(async (req: Request) => {
+  const ws = await requireWorkspace();
+
   let body: unknown;
   try {
     body = await req.json();
@@ -71,6 +79,20 @@ export async function POST(req: Request) {
     );
   }
 
+  const ent = await workspaceEntitlements(ws.workspaceId);
+  if (!ent.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          ent.reason === "seats"
+            ? `This workspace has more members than its ${ent.plan} plan allows (${ent.seats}). An admin can remove members or upgrade.`
+            : `You've used all ${ent.quota} analyses for this period on the ${ent.plan} plan. Upgrade to continue.`,
+        reason: ent.reason,
+      },
+      { status: 402 },
+    );
+  }
+
   const imageLabels = data.images.map(
     (img, i) =>
       `${img.kind === "screenshot" ? "Ads Manager screenshot" : "Creative"} ${i + 1}${img.name ? ` (${img.name})` : ""}`,
@@ -106,7 +128,17 @@ export async function POST(req: Request) {
       temperature: 0.3,
     });
 
-    return NextResponse.json({ analysis: object });
+    // Only successful analyses are stored, so only they count toward quota.
+    const [row] = await sql`
+      insert into analyses (workspace_id, created_by, input, result, model, meta_ad_id)
+      values (
+        ${ws.workspaceId}, ${ws.userId},
+        ${JSON.stringify({ copy: data.copy, setup: data.setup, metrics: data.metrics, imageLabels })},
+        ${JSON.stringify(object)}, ${"xai/grok-4.5"}, ${data.metaAdId ?? null}
+      )
+      returning id`;
+
+    return NextResponse.json({ analysis: object, id: row.id });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Analysis failed unexpectedly.";
@@ -116,4 +148,4 @@ export async function POST(req: Request) {
       { status: 502 },
     );
   }
-}
+});

@@ -72,5 +72,5 @@ export const emptyIntakeForm = (): IntakeFormState => ({
 });
 
 export type AnalyzeResponse =
-  | { analysis: AnalysisResult }
+  | { analysis: AnalysisResult; id: string }
   | { error: string; details?: unknown };
