@@ -11,6 +11,8 @@ export type ClientImage = {
 
 export type IntakeFormState = {
   images: ClientImage[];
+  /** Set when the form was filled from a Meta import; saved with the analysis. */
+  metaAdId?: string;
   copy: {
     primaryText: string;
     headline: string;
