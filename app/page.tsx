@@ -148,7 +148,7 @@ export default function Landing() {
             Pricing
           </h2>
           <p className="mt-2 text-sm text-ink-300">
-            Prices in Malaysian ringgit. Pay by card, FPX or GrabPay.
+            Prices in Malaysian ringgit. Pay by card.
           </p>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {plans.map((plan) => (

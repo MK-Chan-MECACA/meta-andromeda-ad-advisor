@@ -1,23 +1,18 @@
 # Andromeda — Meta Ad Advisor
 
-Single-session dashboard that diagnoses Meta/Facebook/Instagram ads the way **Andromeda retrieval** would: upload creative, paste copy, or drop an Ads Manager screenshot, then get a verdict, scorecard, what worked / failed, and prioritized conversion fixes.
+Multi-tenant SaaS that diagnoses Meta/Facebook/Instagram ads the way **Andromeda retrieval** would: upload creative, paste copy, or drop an Ads Manager screenshot, then get a verdict, scorecard, what worked / failed, and prioritized conversion fixes.
 
-Powered by **xAI Grok** (`grok-4.5`) via the Vercel AI SDK.
+Analyses run through the **Vercel AI Gateway** (Pro: Grok 4.7, Free: a cheaper vision model) with the Vercel AI SDK. Workspaces, history, quotas and billing: see [SaaS setup](#saas-setup).
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local
+vercel env pull .env.local   # Neon, Blob, OIDC (AI Gateway), Clerk/Stripe once installed
+npm run db:migrate
 ```
 
-Add your key to `.env.local`:
-
-```bash
-XAI_API_KEY=xai-...
-```
-
-Get a key from [console.x.ai](https://console.x.ai/).
+Fill anything still missing from `.env.example`.
 
 ## Run
 
@@ -28,6 +23,31 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 ## SaaS setup
+
+Multi-tenant: Clerk Organizations are workspaces; every row is keyed by `workspace_id` (Clerk org id). Spec: issue #4.
+
+### Provisioning (Vercel Marketplace)
+
+| Service | Status / how |
+| --- | --- |
+| Neon Postgres | Provisioned (`DATABASE_URL`). Apply schema: `npm run db:migrate` (idempotent, `db/schema.sql`). |
+| Vercel Blob (private, sin1) | Provisioned (`BLOB_READ_WRITE_TOKEN`). Thumbnails at `workspaces/{workspaceId}/analyses/{id}.jpg`. |
+| Clerk | `vercel integration add clerk` after accepting terms. In Clerk: enable **Organizations**, allow members to create orgs, roles `org:admin` / `org:member`. |
+| Stripe | `vercel integration add stripe` after accepting terms (or set keys manually, below). |
+| AI Gateway | Uses Vercel OIDC automatically on Vercel; locally `vercel env pull` refreshes `VERCEL_OIDC_TOKEN`. Optionally add your xAI key as BYOK in the Gateway dashboard. |
+
+### AI models per plan
+
+```bash
+MODEL_PRO=spacexai/grok-4.7              # default
+MODEL_FREE=anthropic/claude-haiku-5.5    # default; replace with the 3-model eval winner
+```
+
+Each plan falls back to the other plan's model through the Gateway. Token usage is stored per analysis (`analyses.total_tokens`) for margin checks.
+
+### Plans
+
+Limits live in `lib/entitlements.ts` (`PLANS`): Free 1 seat / 10 analyses per calendar month (Malaysia time), Pro 5 seats / 200 per Stripe billing period. Only successful analyses count.
 
 ### Billing (Stripe, MYR)
 
@@ -58,6 +78,14 @@ Local testing: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
 
 Only workspace admins see **Upgrade** / **Manage billing**. Plan changes update the Clerk organization's max memberships (Free 1, Pro 5). Deleting a workspace hard-deletes its analyses, Meta connection, subscription row and Blob thumbnails, and cancels its Stripe subscription.
 
+### Meta connection per workspace
+
+- **Env:** `META_TOKEN_KEY` — 32-byte AES-256-GCM key for Meta tokens stored in `meta_connections`. Generate with `openssl rand -base64 32`. Rotating it invalidates stored tokens; admins then reconnect. `SESSION_SECRET` is no longer used (OAuth `state` is signed with `META_APP_SECRET` and bound to the admin + workspace).
+- **Meta app → Facebook Login for Business → Settings:** Valid OAuth Redirect URI `https://<domain>/api/meta/callback`.
+- **Meta app → Settings → Basic:** Data Deletion Callback URL `https://<domain>/api/meta/deletion` (deletes every workspace connection made by that Facebook user).
+- **Roles:** only workspace admins (`org:admin`) can connect/disconnect; all members can list ad accounts/ads and import. Expired or revoked tokens return 401 "reconnect Meta (ask a workspace admin)".
+- **Beta:** until App Review passes, only users with a role on the Meta app (Admin/Developer/Tester) can connect. Meta enforces this; the panel shows a Beta badge.
+
 ## How to use
 
 1. Drop creative images and/or Ads Manager screenshots (max 3 images, 4MB each).
@@ -70,7 +98,9 @@ Without live metrics, live performance is marked **Unknown** — the advisor wil
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
-- `ai` + `@ai-sdk/xai` + Zod structured output
+- `ai` (AI Gateway) + Zod structured output
+- Clerk (auth + Organizations), Neon Postgres (raw SQL), Stripe, Vercel Blob
+- Tests: `npm test` (`node --test`, pure seams: entitlements, billing reducer, token seal, signed request, sample fixture)
 - Analysis prompt distilled from `.cursor/skills/im-andromeda`
 
 ## Import live ads from Meta
@@ -141,13 +171,3 @@ No App ID or App Secret goes in the MCP config — auth is OAuth only.
 - “Health-check app `{app_id}`”
 - “Set up webhooks for … on app `{app_id}`”
 - “Check compliance / App Review readiness for …”
-
-## SaaS setup
-
-### Meta connection per workspace (phase 4)
-
-- **Env:** `META_TOKEN_KEY` — 32-byte AES-256-GCM key for Meta tokens stored in `meta_connections`. Generate with `openssl rand -base64 32`. Rotating it invalidates stored tokens; admins then reconnect. `SESSION_SECRET` is no longer used (OAuth `state` is signed with `META_APP_SECRET` and bound to the admin + workspace).
-- **Meta app → Facebook Login for Business → Settings:** Valid OAuth Redirect URI `https://<domain>/api/meta/callback`.
-- **Meta app → Settings → Basic:** Data Deletion Callback URL `https://<domain>/api/meta/deletion` (deletes every workspace connection made by that Facebook user).
-- **Roles:** only workspace admins (`org:admin`) can connect/disconnect; all members can list ad accounts/ads and import. Expired or revoked tokens return 401 "reconnect Meta (ask a workspace admin)".
-- **Beta:** until App Review passes, only users with a role on the Meta app (Admin/Developer/Tester) can connect. Meta enforces this; the panel shows a Beta badge.
