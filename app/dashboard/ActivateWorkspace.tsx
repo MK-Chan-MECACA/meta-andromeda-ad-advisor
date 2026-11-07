@@ -15,7 +15,7 @@ export function ActivateWorkspace({ organizationId }: { organizationId: string }
   }, [isLoaded, setActive, organizationId, router]);
 
   return (
-    <main className="flex flex-1 items-center justify-center p-8 text-sm text-ink-300">
+    <main className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
       Preparing your workspace…
     </main>
   );

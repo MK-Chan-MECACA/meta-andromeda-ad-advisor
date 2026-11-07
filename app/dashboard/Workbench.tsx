@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { IntakePanel } from "@/components/IntakePanel";
 import { MetaImportPanel } from "@/components/MetaImportPanel";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
-import { IconLoader, IconSpark } from "@/components/Icons";
+import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import { uploadThumbnail } from "@/lib/thumbnail";
 import {
@@ -16,36 +18,20 @@ import {
 
 function AnalyzingState() {
   return (
-    <div
-      className="surface-glass animate-rise mt-8 overflow-hidden rounded-2xl px-5 py-5"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-meta/15 text-meta-bright">
-          <IconLoader className="h-5 w-5 animate-spin" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1 space-y-3">
-          <div>
-            <p className="font-display text-sm tracking-wide text-meta-bright uppercase">
-              Analyzing
-            </p>
-            <p className="mt-1 text-sm text-ink-200">
-              Reading your assets through retrieval → ranking → learning…
-            </p>
-          </div>
-          <div className="space-y-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-2.5 animate-pulse rounded-full bg-ink-700/80"
-                style={{ width: `${92 - i * 18}%`, animationDelay: `${i * 120}ms` }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+    <Card role="status" aria-live="polite">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Loader2 className="size-4 animate-spin text-primary" aria-hidden />
+          Analyzing
+        </CardTitle>
+        <CardDescription>Reading your assets through retrieval → ranking → learning…</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-11/12" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -108,58 +94,32 @@ export function Workbench() {
   }
 
   return (
-    <div className="relative flex-1 overflow-x-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[linear-gradient(165deg,#060a12_0%,#0b1220_42%,#0a1628_72%,#060a12_100%)]" />
-        <div className="animate-blob absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.28),transparent_68%)]" />
-        <div className="animate-blob absolute top-[35%] -right-32 h-[360px] w-[360px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.12),transparent_70%)] [animation-delay:2s]" />
-        <div className="absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:72px_72px]" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink-950 to-transparent" />
-      </div>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">New analysis</h1>
+        <p className="text-sm text-muted-foreground">
+          Add creative, copy, setup or an Ads Manager screenshot. Andromeda scores
+          retrieval, auction fit and learning, then ranks the fixes.
+        </p>
+      </header>
 
-      <main className="relative mx-auto w-full max-w-6xl px-5 pt-10 pb-24 sm:px-8 sm:pt-14">
-        <header className="mb-10 max-w-3xl animate-rise">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-meta/30 bg-meta/10 px-3 py-1.5 text-xs text-meta-bright">
-            <IconSpark className="h-3.5 w-3.5" aria-hidden />
-            <span className="font-display tracking-[0.18em] uppercase">
-              Meta retrieval gatekeeper
-            </span>
-          </div>
-          <h1 className="font-display text-5xl leading-[0.95] tracking-tight text-ink-50 sm:text-7xl">
-            ANDROMEDA
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-300 sm:text-lg">
-            Upload creative, paste copy, or drop an Ads Manager screenshot — I
-            score retrieval, auction fit, and learning so you can maximize
-            conversion.
-          </p>
-        </header>
+      <MetaImportPanel form={form} onChange={setForm} />
 
-        <div className="animate-rise-delay mb-6">
-          <MetaImportPanel form={form} onChange={setForm} />
+      <IntakePanel
+        form={form}
+        onChange={setForm}
+        onAnalyze={() => void handleAnalyze()}
+        loading={loading}
+        error={error}
+      />
+
+      {loading ? <AnalyzingState /> : null}
+
+      {analysis ? (
+        <div ref={resultsRef} className="scroll-mt-20">
+          <ResultsDashboard analysis={analysis} />
         </div>
-
-        <div className="surface-glass animate-rise-delay rounded-2xl p-5 sm:p-8">
-          <IntakePanel
-            form={form}
-            onChange={setForm}
-            onAnalyze={() => void handleAnalyze()}
-            loading={loading}
-            error={error}
-          />
-        </div>
-
-        {loading ? <AnalyzingState /> : null}
-
-        {analysis ? (
-          <div ref={resultsRef} className="mt-12 animate-rise-slow">
-            <ResultsDashboard analysis={analysis} />
-          </div>
-        ) : null}
-      </main>
-    </div>
+      ) : null}
+    </main>
   );
 }

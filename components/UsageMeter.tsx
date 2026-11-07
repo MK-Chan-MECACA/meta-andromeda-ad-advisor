@@ -1,4 +1,7 @@
 import type { Entitlements } from "@/lib/entitlements";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BillingButton } from "./BillingButton";
 
 /** Plan badge + analyses used this period; billing actions for admins only. */
@@ -12,23 +15,29 @@ export function UsageMeter({
 }) {
   const pct = Math.min(100, Math.round((e.used / e.quota) * 100));
   return (
-    <div className="flex items-center gap-3 text-xs text-ink-300">
-      <span className="rounded-full border border-meta/30 bg-meta/10 px-2 py-0.5 font-display tracking-wider text-meta-bright uppercase">
+    <div className="flex items-center gap-3">
+      <Badge variant="outline" className="capitalize">
         {e.plan}
-      </span>
-      <div className="w-28" title={`${e.used} of ${e.quota} analyses used this period`}>
-        <div className="h-1.5 overflow-hidden rounded-full bg-ink-700">
-          <div
-            className={`h-full ${e.allowed ? "bg-meta" : "bg-amber-500"}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <p className="mt-1">
-          {e.used}/{e.quota} analyses
-        </p>
-      </div>
+      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="hidden w-32 flex-col gap-1 sm:flex" tabIndex={0}>
+            <Progress
+              value={pct}
+              className={e.allowed ? undefined : "[&>*]:bg-warn!"}
+              aria-label="Analyses used this period"
+            />
+            <span className="font-mono text-xs text-muted-foreground tabular-nums">
+              {e.used}/{e.quota} analyses
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          {e.used} of {e.quota} analyses used this period
+        </TooltipContent>
+      </Tooltip>
       {e.reason === "seats" ? (
-        <span className="text-amber-400">
+        <span className="text-xs text-warn">
           Over the {e.seats}-seat limit — remove members or upgrade.
         </span>
       ) : null}

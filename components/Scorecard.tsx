@@ -1,4 +1,12 @@
 import type { AnalysisResult } from "@/lib/analysis-schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function liveLabel(value: AnalysisResult["scorecard"]["livePerformance"]) {
   switch (value) {
@@ -16,8 +24,8 @@ function liveLabel(value: AnalysisResult["scorecard"]["livePerformance"]) {
 function gradeTone(grade: string) {
   if (/^[AB]/.test(grade) || grade === "Working") return "text-pass";
   if (/^[CD]/.test(grade) || grade === "Learning") return "text-warn";
-  if (/^[EF]/.test(grade) || grade === "Not working") return "text-danger";
-  return "text-meta-bright";
+  if (/^[EF]/.test(grade) || grade === "Not working") return "text-fail";
+  return "text-muted-foreground";
 }
 
 export function Scorecard({
@@ -49,30 +57,32 @@ export function Scorecard({
   ];
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-700 bg-ink-900/40">
-      <div className="hidden grid-cols-[1.2fr_auto_1.6fr] gap-x-4 border-b border-ink-700 bg-ink-900/80 px-5 py-3 text-xs tracking-wide text-ink-400 uppercase md:grid">
-        <span>Dimension</span>
-        <span>Grade</span>
-        <span>Note</span>
-      </div>
-      <ul>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="md:w-56">Dimension</TableHead>
+          <TableHead className="w-24">Grade</TableHead>
+          <TableHead className="hidden md:table-cell">Note</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((row) => (
-          <li
-            key={row.label}
-            className="grid gap-1 border-b border-ink-800 px-5 py-4 last:border-b-0 md:grid-cols-[1.2fr_auto_1.6fr] md:items-start md:gap-x-4"
-          >
-            <span className="text-sm font-medium text-ink-200">{row.label}</span>
-            <span
-              className={`font-display text-lg ${gradeTone(String(row.grade))}`}
+          <TableRow key={row.label}>
+            <TableCell className="align-top whitespace-normal">
+              <span className="font-medium">{row.label}</span>
+              <p className="mt-1 text-muted-foreground md:hidden">{row.note}</p>
+            </TableCell>
+            <TableCell
+              className={`align-top font-mono font-semibold ${gradeTone(String(row.grade))}`}
             >
               {row.grade}
-            </span>
-            <span className="text-sm leading-relaxed text-ink-300">
+            </TableCell>
+            <TableCell className="hidden align-top whitespace-normal text-muted-foreground md:table-cell">
               {row.note}
-            </span>
-          </li>
+            </TableCell>
+          </TableRow>
         ))}
-      </ul>
-    </div>
+      </TableBody>
+    </Table>
   );
 }

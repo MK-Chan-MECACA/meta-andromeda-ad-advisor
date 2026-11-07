@@ -1,11 +1,13 @@
-import Link from "next/link";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { PLANS } from "@/lib/entitlements";
 import { billingRow, hasLiveSubscription } from "@/lib/stripe";
 import { workspaceEntitlements } from "@/lib/workspace";
 import { UsageMeter } from "@/components/UsageMeter";
+import { Logo } from "@/components/Logo";
+import { Separator } from "@/components/ui/separator";
 import { ActivateWorkspace } from "./ActivateWorkspace";
+import { NavLinks } from "./NavLinks";
 
 /** Ensures the user has an active workspace, creating a personal one on first visit. */
 async function activeWorkspace(userId: string, orgId: string | null | undefined) {
@@ -49,26 +51,22 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <nav className="relative z-10 flex flex-wrap items-center gap-4 border-b border-ink-800 bg-ink-950/80 px-5 py-3 sm:px-8">
-        <OrganizationSwitcher
-          hidePersonal
-          afterSelectOrganizationUrl="/dashboard"
-          afterCreateOrganizationUrl="/dashboard"
-        />
-        <Link href="/dashboard" className="text-sm text-ink-200 hover:text-ink-50">
-          Analyze
-        </Link>
-        <Link
-          href="/dashboard/history"
-          className="text-sm text-ink-200 hover:text-ink-50"
-        >
-          History
-        </Link>
-        <div className="ml-auto flex items-center gap-4">
-          <UsageMeter entitlements={ent} billing={billing} />
-          <UserButton />
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
+          <Logo href="/dashboard" />
+          <Separator orientation="vertical" className="h-5!" />
+          <OrganizationSwitcher
+            hidePersonal
+            afterSelectOrganizationUrl="/dashboard"
+            afterCreateOrganizationUrl="/dashboard"
+          />
+          <NavLinks />
+          <div className="ml-auto flex items-center gap-3">
+            <UsageMeter entitlements={ent} billing={billing} />
+            <UserButton />
+          </div>
         </div>
-      </nav>
+      </header>
       {children}
     </div>
   );

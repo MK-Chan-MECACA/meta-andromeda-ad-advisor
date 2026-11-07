@@ -1,7 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CircleAlert, Loader2 } from "lucide-react";
 import type { ClientImage, IntakeFormState } from "@/lib/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type AdAccount = {
   id: string;
@@ -31,9 +63,6 @@ type MetaStatus = {
   expiresAt: string | null;
   isAdmin: boolean;
 };
-
-const btn =
-  "inline-flex items-center justify-center border border-ink-700 px-4 py-2 font-display text-xs tracking-wide uppercase transition hover:border-meta hover:text-meta-bright disabled:cursor-not-allowed disabled:opacity-50";
 
 const ACCOUNT_STORAGE_KEY = "andromeda.meta.accountId";
 
@@ -149,7 +178,6 @@ export function MetaImportPanel({
   }
 
   async function disconnect() {
-    if (!confirm("Disconnect Meta for the whole workspace?")) return;
     setBusy("disconnect");
     setError(null);
     try {
@@ -215,142 +243,144 @@ export function MetaImportPanel({
   }
 
   return (
-    <section
-      className="border border-ink-700/80 bg-ink-950/40 p-5"
-      aria-label="Meta import"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="flex items-center gap-2 font-display text-sm tracking-wide text-ink-100 uppercase">
-            Import from Meta
-            <span
-              className="border border-warn/50 px-1.5 py-0.5 text-[10px] tracking-widest text-warn"
-              title="Limited to Meta app testers until Meta App Review is approved."
-            >
-              Beta
-            </span>
-          </h3>
-          <p className="mt-1 text-xs text-ink-500">
-            Pull a live ad&apos;s creative, setup, and last-7-day metrics
-            straight into the form.
-          </p>
-          {status?.connected ? (
-            <p className="mt-1 text-xs text-ink-400">
-              Connected{status.connectedBy ? ` by ${status.connectedBy}` : ""}
-              {status.expiresAt
-                ? ` · expires ${new Date(status.expiresAt).toLocaleDateString()}`
-                : ""}
-            </p>
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          Import from Meta
+          <Badge
+            variant="outline"
+            title="Limited to Meta app testers until Meta App Review is approved."
+          >
+            Beta
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          {status?.connected
+            ? `Connected${status.connectedBy ? ` by ${status.connectedBy}` : ""}${
+                status.expiresAt
+                  ? ` · expires ${new Date(status.expiresAt).toLocaleDateString()}`
+                  : ""
+              }`
+            : "Pull a live ad's creative, setup and last-7-day metrics into the form."}
+        </CardDescription>
+        <CardAction className="flex gap-2">
+          {/* Route handlers, not pages — <Link> client nav would break the OAuth redirect. */}
+          {!status ? null : status.isAdmin ? (
+            <>
+              <Button asChild size="sm" variant={status.connected ? "outline" : "default"}>
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                <a href="/api/meta/login">{status.connected ? "Reconnect" : "Connect Meta"}</a>
+              </Button>
+              {status.connected ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" disabled={busy !== null}>
+                      Disconnect
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Disconnect Meta?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes the Meta connection for everyone in this workspace.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction variant="destructive" onClick={() => void disconnect()}>
+                        Disconnect
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : null}
+            </>
+          ) : !status.connected ? (
+            <span className="text-xs text-muted-foreground">Ask a workspace admin to connect Meta.</span>
           ) : null}
-        </div>
+        </CardAction>
+      </CardHeader>
 
-        {/* Route handlers, not pages — <Link> client nav would break the OAuth redirect. */}
-        {/* eslint-disable @next/next/no-html-link-for-pages */}
-        {!status ? null : status.isAdmin ? (
-          <div className="flex gap-2">
-            <a
-              className={
-                status.connected
-                  ? btn
-                  : "inline-flex items-center justify-center bg-meta px-5 py-2.5 font-display text-xs tracking-wide text-white uppercase transition hover:bg-meta-bright"
-              }
-              href="/api/meta/login"
-            >
-              {status.connected ? "Reconnect" : "Connect Meta"}
-            </a>
-            {status.connected ? (
-              <button
-                type="button"
-                className={btn}
-                disabled={busy !== null}
-                onClick={() => void disconnect()}
+      {connected || error ? (
+        <CardContent className="flex flex-col gap-4">
+          {connected ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="meta-account">Ad account</Label>
+              <Select
+                value={accountId || undefined}
+                onValueChange={(v) => void loadAds(v)}
+                disabled={loadingAccounts}
               >
-                Disconnect
-              </button>
-            ) : null}
-          </div>
-        ) : !status.connected ? (
-          <p className="text-xs text-ink-400">Ask a workspace admin to connect Meta.</p>
-        ) : null}
-        {/* eslint-enable @next/next/no-html-link-for-pages */}
-      </div>
-
-      {connected ? (
-        <div className="mt-5 space-y-4">
-          <label className="block space-y-1.5">
-            <span className="text-xs tracking-wide text-ink-400 uppercase">
-              Ad account
-            </span>
-            <select
-              className="w-full border border-ink-700 bg-ink-950/60 px-3 py-2.5 text-sm text-ink-50 outline-none focus:border-meta"
-              value={accountId}
-              onChange={(e) => void loadAds(e.target.value)}
-              disabled={loadingAccounts}
-            >
-              <option value="">
-                {loadingAccounts ? "Loading accounts…" : "Select…"}
-              </option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({a.currency})
-                </option>
-              ))}
-            </select>
-          </label>
+                <SelectTrigger id="meta-account" className="w-full sm:w-80">
+                  <SelectValue placeholder={loadingAccounts ? "Loading accounts…" : "Select an account"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name} <span className="text-muted-foreground">({a.currency})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
 
           {busy === "ads" ? (
-            <p className="text-sm text-ink-400">Loading ads…</p>
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
           ) : null}
 
           {ads.length ? (
-            <ul className="max-h-80 divide-y divide-ink-800 overflow-y-auto border border-ink-800">
+            <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
               {ads.map((ad) => (
-                <li
-                  key={ad.id}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm"
-                >
+                <li key={ad.id} className="flex items-center gap-3 px-3 py-2">
                   {ad.creative?.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={ad.creative.thumbnail_url}
                       alt=""
-                      className="h-10 w-10 shrink-0 object-cover"
+                      className="size-9 shrink-0 rounded-md object-cover"
                     />
                   ) : (
-                    <div className="h-10 w-10 shrink-0 bg-ink-800" />
+                    <div className="size-9 shrink-0 rounded-md bg-muted" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-ink-100">{ad.name}</p>
-                    <p className="truncate text-xs text-ink-500">
+                    <p className="truncate font-medium">{ad.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {[ad.campaign?.name, ad.adset?.name, ad.effective_status]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className={btn}
+                  <Button
+                    size="sm"
+                    variant="outline"
                     disabled={busy !== null}
                     onClick={() => void importAd(ad)}
                   >
+                    {busy === ad.id ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
                     {busy === ad.id ? "Importing…" : "Import"}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
           ) : null}
 
-          {accountId && !ads.length && busy !== "ads" ? (
-            <p className="text-sm text-ink-500">No ads in this account.</p>
+          {connected && accountId && !ads.length && busy !== "ads" ? (
+            <p className="text-sm text-muted-foreground">No ads in this account.</p>
           ) : null}
-        </div>
-      ) : null}
 
-      {error ? (
-        <p className="mt-4 border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
       ) : null}
-    </section>
+    </Card>
   );
 }

@@ -1,27 +1,41 @@
 import type { AnalysisResult } from "@/lib/analysis-schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function FixesList({ fixes }: { fixes: AnalysisResult["fixes"] }) {
   const ordered = [...fixes].sort((a, b) => a.priority - b.priority);
 
   return (
-    <ol className="space-y-3">
-      {ordered.map((fix, index) => (
-        <li
-          key={`${fix.priority}-${fix.action}`}
-          className="grid grid-cols-[auto_1fr] gap-4 rounded-2xl border border-ink-700 bg-ink-900/40 px-4 py-4 transition duration-200 hover:border-meta/35 hover:bg-ink-900/70"
-          style={{ animationDelay: `${index * 60}ms` }}
-        >
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 font-display text-lg text-accent-bright">
-            {String(fix.priority).padStart(2, "0")}
-          </span>
-          <div className="min-w-0 pt-0.5">
-            <p className="text-base font-medium text-ink-50">{fix.action}</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-300">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-12">#</TableHead>
+          <TableHead className="md:w-2/5">Action</TableHead>
+          <TableHead className="hidden md:table-cell">Why</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ordered.map((fix) => (
+          <TableRow key={`${fix.priority}-${fix.action}`}>
+            <TableCell className="align-top font-mono text-muted-foreground tabular-nums">
+              {String(fix.priority).padStart(2, "0")}
+            </TableCell>
+            <TableCell className="align-top font-medium whitespace-normal">
+              {fix.action}
+              <p className="mt-1 font-normal text-muted-foreground md:hidden">{fix.why}</p>
+            </TableCell>
+            <TableCell className="hidden align-top whitespace-normal text-muted-foreground md:table-cell">
               {fix.why}
-            </p>
-          </div>
-        </li>
-      ))}
-    </ol>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

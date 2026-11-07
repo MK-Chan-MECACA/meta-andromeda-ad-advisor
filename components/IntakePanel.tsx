@@ -1,18 +1,39 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ImageDropzone } from "@/components/ImageDropzone";
 import {
-  IconArrowLeft,
-  IconArrowRight,
-  IconChart,
-  IconCheck,
-  IconImage,
-  IconLoader,
-  IconSliders,
-  IconSpark,
-  IconType,
-} from "@/components/Icons";
+  ArrowLeft,
+  ArrowRight,
+  ChartColumn,
+  Image as ImageIcon,
+  Loader2,
+  SlidersHorizontal,
+  Sparkles,
+  Type,
+  CircleAlert,
+} from "lucide-react";
+import { ImageDropzone } from "@/components/ImageDropzone";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import type { ClientImage, IntakeFormState } from "@/lib/types";
 
 type Props = {
@@ -24,30 +45,10 @@ type Props = {
 };
 
 const STEPS = [
-  {
-    id: "assets",
-    label: "Assets",
-    hint: "Creative & screenshots",
-    Icon: IconImage,
-  },
-  {
-    id: "copy",
-    label: "Copy",
-    hint: "Text that ships with the ad",
-    Icon: IconType,
-  },
-  {
-    id: "setup",
-    label: "Setup",
-    hint: "Objective & targeting",
-    Icon: IconSliders,
-  },
-  {
-    id: "metrics",
-    label: "Metrics",
-    hint: "Optional live results",
-    Icon: IconChart,
-  },
+  { id: "assets", label: "Assets", hint: "Creative and Ads Manager screenshots.", Icon: ImageIcon },
+  { id: "copy", label: "Copy", hint: "The text that ships with the ad.", Icon: Type },
+  { id: "setup", label: "Setup", hint: "Objective, targeting and budget.", Icon: SlidersHorizontal },
+  { id: "metrics", label: "Metrics", hint: "Optional live results.", Icon: ChartColumn },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -64,29 +65,19 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-xs font-medium tracking-wide text-ink-300 uppercase"
-      >
-        {label}
-      </label>
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
-      {hint ? <p className="text-xs text-ink-400">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
 
-export function IntakePanel({
-  form,
-  onChange,
-  onAnalyze,
-  loading,
-  error,
-}: Props) {
-  const baseId = useId();
+export function IntakePanel({ form, onChange, onAnalyze, loading, error }: Props) {
+  const id = useId();
   const [step, setStep] = useState<StepId>("assets");
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const current = STEPS[stepIndex];
 
   const setCopy = (key: keyof IntakeFormState["copy"], value: string) =>
     onChange({ ...form, copy: { ...form.copy, [key]: value } });
@@ -96,116 +87,50 @@ export function IntakePanel({
     onChange({ ...form, metrics: { ...form.metrics, [key]: value } });
 
   const addImages = (images: ClientImage[]) =>
-    onChange({
-      ...form,
-      images: [...form.images, ...images].slice(0, 3),
-    });
+    onChange({ ...form, images: [...form.images, ...images].slice(0, 3) });
+  const removeImage = (imageId: string) =>
+    onChange({ ...form, images: form.images.filter((img) => img.id !== imageId) });
 
-  const removeImage = (id: string) =>
-    onChange({
-      ...form,
-      images: form.images.filter((img) => img.id !== id),
-    });
-
-  const goNext = () => {
-    if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1].id);
-  };
-  const goBack = () => {
-    if (stepIndex > 0) setStep(STEPS[stepIndex - 1].id);
-  };
-
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  /** Plain text inputs share one shape; only the setter differs. */
+  const text = (
+    key: string,
+    value: string,
+    set: (v: string) => void,
+    placeholder?: string,
+  ) => (
+    <Input
+      id={`${id}-${key}`}
+      value={value}
+      onChange={(e) => set(e.target.value)}
+      placeholder={placeholder}
+    />
+  );
 
   return (
-    <section className="space-y-8" aria-label="Ad intake">
-      <div className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="font-display text-xs tracking-[0.2em] text-meta-bright uppercase">
-              Intake · Step {stepIndex + 1} of {STEPS.length}
-            </p>
-            <h2 className="mt-1 font-display text-xl text-ink-50 sm:text-2xl">
-              {STEPS[stepIndex].label}
-            </h2>
-            <p className="mt-1 text-sm text-ink-300">{STEPS[stepIndex].hint}</p>
-          </div>
-          <p className="font-display text-sm text-ink-400 tabular-nums">
-            {Math.round(progress)}%
-          </p>
-        </div>
+    <Card>
+      <Tabs value={step} onValueChange={(v) => setStep(v as StepId)} className="gap-4">
+        <CardHeader>
+          <CardTitle>Ad intake</CardTitle>
+          <CardDescription>
+            Step {stepIndex + 1} of {STEPS.length} · {current.hint}
+          </CardDescription>
+        </CardHeader>
 
-        <div
-          className="h-1.5 overflow-hidden rounded-full bg-ink-800"
-          role="progressbar"
-          aria-valuenow={stepIndex + 1}
-          aria-valuemin={1}
-          aria-valuemax={STEPS.length}
-          aria-label="Intake progress"
-        >
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-meta-deep via-meta to-accent transition-[width] duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <CardContent className="flex flex-col gap-6">
+          <TabsList className="grid w-full grid-cols-4">
+            {STEPS.map(({ id: stepId, label, Icon }) => (
+              <TabsTrigger key={stepId} value={stepId}>
+                <Icon data-icon="inline-start" />
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {STEPS.map((s, i) => {
-            const active = s.id === step;
-            const done = i < stepIndex;
-            const Icon = s.Icon;
-            return (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => setStep(s.id)}
-                  className={[
-                    "flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition duration-200",
-                    active
-                      ? "border-meta/50 bg-meta/10 shadow-[0_0_24px_rgba(37,99,235,0.12)]"
-                      : done
-                        ? "border-pass/30 bg-pass/5 hover:border-pass/50"
-                        : "border-ink-700 bg-ink-950/40 hover:border-ink-500",
-                  ].join(" ")}
-                  aria-current={active ? "step" : undefined}
-                >
-                  <span
-                    className={[
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                      active
-                        ? "bg-meta/20 text-meta-bright"
-                        : done
-                          ? "bg-pass/15 text-pass"
-                          : "bg-ink-800 text-ink-400",
-                    ].join(" ")}
-                  >
-                    {done ? (
-                      <IconCheck className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <Icon className="h-4 w-4" aria-hidden />
-                    )}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-ink-50">
-                      {s.label}
-                    </span>
-                    <span className="hidden truncate text-xs text-ink-400 sm:block">
-                      {s.hint}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      <div key={step} className="animate-rise space-y-6">
-        {step === "assets" ? (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <TabsContent value="assets" className="grid gap-6 lg:grid-cols-2">
             <ImageDropzone
               kind="creative"
               label="Creative"
-              hint="Ad images or video thumbnails for retrieval & quality scoring"
+              hint="Ad images or video thumbnails for retrieval and quality scoring."
               images={form.images}
               onAdd={addImages}
               onRemove={removeImage}
@@ -214,167 +139,87 @@ export function IntakePanel({
             <ImageDropzone
               kind="screenshot"
               label="Ads Manager screenshot"
-              hint="Campaign, ad set, or results screens — I'll read the settings"
+              hint="Campaign, ad set or results screens. I'll read the settings."
               images={form.images}
               onAdd={addImages}
               onRemove={removeImage}
               maxCount={3}
             />
-          </div>
-        ) : null}
+          </TabsContent>
 
-        {step === "copy" ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Primary text" htmlFor={`${baseId}-primary`}>
-              <textarea
-                id={`${baseId}-primary`}
-                rows={7}
-                className="input-field resize-y"
+          <TabsContent value="copy" className="grid gap-4 md:grid-cols-2">
+            <Field label="Primary text" htmlFor={`${id}-primary`}>
+              <Textarea
+                id={`${id}-primary`}
+                rows={9}
+                className="min-h-48"
                 placeholder="Paste primary text…"
                 value={form.copy.primaryText}
                 onChange={(e) => setCopy("primaryText", e.target.value)}
               />
             </Field>
-            <div className="space-y-4">
-              <Field label="Headline" htmlFor={`${baseId}-headline`}>
-                <input
-                  id={`${baseId}-headline`}
-                  className="input-field"
-                  value={form.copy.headline}
-                  onChange={(e) => setCopy("headline", e.target.value)}
-                  placeholder="Headline"
-                />
+            <div className="flex flex-col gap-4">
+              <Field label="Headline" htmlFor={`${id}-headline`}>
+                {text("headline", form.copy.headline, (v) => setCopy("headline", v), "Headline")}
               </Field>
-              <Field label="Description" htmlFor={`${baseId}-description`}>
-                <input
-                  id={`${baseId}-description`}
-                  className="input-field"
-                  value={form.copy.description}
-                  onChange={(e) => setCopy("description", e.target.value)}
-                  placeholder="Link description"
-                />
+              <Field label="Description" htmlFor={`${id}-description`}>
+                {text("description", form.copy.description, (v) => setCopy("description", v), "Link description")}
               </Field>
-              <Field label="CTA" htmlFor={`${baseId}-cta`}>
-                <input
-                  id={`${baseId}-cta`}
-                  className="input-field"
-                  value={form.copy.cta}
-                  onChange={(e) => setCopy("cta", e.target.value)}
-                  placeholder="Learn more / Shop now / WhatsApp…"
-                />
+              <Field label="CTA" htmlFor={`${id}-cta`}>
+                {text("cta", form.copy.cta, (v) => setCopy("cta", v), "Learn more / Shop now / WhatsApp…")}
               </Field>
             </div>
-          </div>
-        ) : null}
+          </TabsContent>
 
-        {step === "setup" ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Objective" htmlFor={`${baseId}-objective`}>
-              <input
-                id={`${baseId}-objective`}
-                className="input-field"
-                value={form.setup.objective}
-                onChange={(e) => setSetup("objective", e.target.value)}
-                placeholder="Sales / Leads / Traffic…"
-              />
+          <TabsContent value="setup" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Objective" htmlFor={`${id}-objective`}>
+              {text("objective", form.setup.objective, (v) => setSetup("objective", v), "Sales / Leads / Traffic…")}
             </Field>
-            <Field
-              label="Conversion location"
-              htmlFor={`${baseId}-location`}
-            >
-              <input
-                id={`${baseId}-location`}
-                className="input-field"
-                value={form.setup.conversionLocation}
-                onChange={(e) =>
-                  setSetup("conversionLocation", e.target.value)
-                }
-                placeholder="Website / WhatsApp / Instant form…"
-              />
+            <Field label="Conversion location" htmlFor={`${id}-location`}>
+              {text("location", form.setup.conversionLocation, (v) => setSetup("conversionLocation", v), "Website / WhatsApp / Instant form…")}
             </Field>
-            <Field label="Targeting mode" htmlFor={`${baseId}-targeting-mode`}>
-              <select
-                id={`${baseId}-targeting-mode`}
-                className="input-field"
-                value={form.setup.targetingMode}
-                onChange={(e) => setSetup("targetingMode", e.target.value)}
+            <Field label="Targeting mode" htmlFor={`${id}-targeting-mode`}>
+              <Select
+                value={form.setup.targetingMode || undefined}
+                onValueChange={(v) => setSetup("targetingMode", v)}
               >
-                <option value="">Select…</option>
-                <option value="broad">Broad / Advantage+ Audience</option>
-                <option value="advantage_plus">Advantage+</option>
-                <option value="interest">Interest stack</option>
-                <option value="lal">Lookalike / LAL</option>
-                <option value="unknown">Unknown</option>
-              </select>
+                <SelectTrigger id={`${id}-targeting-mode`} className="w-full">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="broad">Broad / Advantage+ Audience</SelectItem>
+                  <SelectItem value="advantage_plus">Advantage+</SelectItem>
+                  <SelectItem value="interest">Interest stack</SelectItem>
+                  <SelectItem value="lal">Lookalike / LAL</SelectItem>
+                  <SelectItem value="unknown">Unknown</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
-            <Field label="Geo / age" htmlFor={`${baseId}-geo`}>
-              <input
-                id={`${baseId}-geo`}
-                className="input-field"
-                value={form.setup.geo}
-                onChange={(e) => setSetup("geo", e.target.value)}
-                placeholder="MY, 25–54…"
-              />
+            <Field label="Geo / age" htmlFor={`${id}-geo`}>
+              {text("geo", form.setup.geo, (v) => setSetup("geo", v), "MY, 25–54…")}
             </Field>
-            <Field label="Budget" htmlFor={`${baseId}-budget`}>
-              <input
-                id={`${baseId}-budget`}
-                className="input-field"
-                value={form.setup.budget}
-                onChange={(e) => setSetup("budget", e.target.value)}
-                placeholder="RM100/day CBO…"
-              />
+            <Field label="Budget" htmlFor={`${id}-budget`}>
+              {text("budget", form.setup.budget, (v) => setSetup("budget", v), "RM100/day CBO…")}
             </Field>
-            <Field label="Ads in ad set" htmlFor={`${baseId}-ads`}>
-              <input
-                id={`${baseId}-ads`}
-                className="input-field"
-                value={form.setup.adsInAdSet}
-                onChange={(e) => setSetup("adsInAdSet", e.target.value)}
-                placeholder="e.g. 4"
-              />
+            <Field label="Ads in ad set" htmlFor={`${id}-ads`}>
+              {text("ads", form.setup.adsInAdSet, (v) => setSetup("adsInAdSet", v), "e.g. 4")}
             </Field>
-            <Field label="Placements" htmlFor={`${baseId}-placements`}>
-              <input
-                id={`${baseId}-placements`}
-                className="input-field"
-                value={form.setup.placements}
-                onChange={(e) => setSetup("placements", e.target.value)}
-                placeholder="Advantage+ / Feed only…"
-              />
+            <Field label="Placements" htmlFor={`${id}-placements`}>
+              {text("placements", form.setup.placements, (v) => setSetup("placements", v), "Advantage+ / Feed only…")}
             </Field>
-            <Field label="Campaign type" htmlFor={`${baseId}-campaign`}>
-              <input
-                id={`${baseId}-campaign`}
-                className="input-field"
-                value={form.setup.campaignType}
-                onChange={(e) => setSetup("campaignType", e.target.value)}
-                placeholder="ASC / Manual / ABO…"
-              />
+            <Field label="Campaign type" htmlFor={`${id}-campaign`}>
+              {text("campaign", form.setup.campaignType, (v) => setSetup("campaignType", v), "ASC / Manual / ABO…")}
             </Field>
-            <Field
-              label="Targeting details"
-              htmlFor={`${baseId}-targeting`}
-              hint="Interests, exclusions, LAL %…"
-            >
-              <input
-                id={`${baseId}-targeting`}
-                className="input-field"
-                value={form.setup.targeting}
-                onChange={(e) => setSetup("targeting", e.target.value)}
-                placeholder="Interests, exclusions, LAL %…"
-              />
+            <Field label="Targeting details" htmlFor={`${id}-targeting`}>
+              {text("targeting", form.setup.targeting, (v) => setSetup("targeting", v), "Interests, exclusions, LAL %…")}
             </Field>
-          </div>
-        ) : null}
+          </TabsContent>
 
-        {step === "metrics" ? (
-          <div className="space-y-5">
-            <div className="rounded-xl border border-accent/25 bg-accent/5 px-4 py-3 text-sm text-ink-200">
-              Optional — leave blank and live performance stays{" "}
-              <span className="font-medium text-accent-bright">Unknown</span>.
-              I will not invent ROAS success.
-            </div>
+          <TabsContent value="metrics" className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              Leave blank and live performance stays <span className="text-foreground">Unknown</span>.
+              Nothing is guessed.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {(
                 [
@@ -388,78 +233,52 @@ export function IntakePanel({
                   ["notes", "Notes"],
                 ] as const
               ).map(([key, label]) => (
-                <Field key={key} label={label} htmlFor={`${baseId}-${key}`}>
-                  <input
-                    id={`${baseId}-${key}`}
-                    className="input-field"
-                    value={form.metrics[key]}
-                    onChange={(e) => setMetrics(key, e.target.value)}
-                    placeholder={
-                      key === "notes" ? "Funnel notes, EMQ, Pixel…" : undefined
-                    }
-                  />
+                <Field key={key} label={label} htmlFor={`${id}-${key}`}>
+                  {text(
+                    key,
+                    form.metrics[key],
+                    (v) => setMetrics(key, v),
+                    key === "notes" ? "Funnel notes, EMQ, Pixel…" : undefined,
+                  )}
                 </Field>
               ))}
             </div>
-          </div>
-        ) : null}
-      </div>
+          </TabsContent>
 
-      <div className="flex flex-col gap-3 border-t border-ink-700/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-md text-sm text-ink-400">
-          {step === "metrics"
-            ? "Ready when you are — I score retrieval, auction fit, and learning density."
-            : "One focused step at a time. Jump ahead anytime via the step tabs."}
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={goBack}
+          {error ? (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+
+        <CardFooter className="justify-between gap-2 border-t">
+          <Button
+            variant="outline"
+            onClick={() => setStep(STEPS[stepIndex - 1].id)}
             disabled={stepIndex === 0 || loading}
-            className="btn-ghost"
           >
-            <IconArrowLeft className="h-4 w-4" aria-hidden />
+            <ArrowLeft data-icon="inline-start" />
             Back
-          </button>
+          </Button>
           {stepIndex < STEPS.length - 1 ? (
-            <button type="button" onClick={goNext} className="btn-primary">
+            <Button variant="secondary" onClick={() => setStep(STEPS[stepIndex + 1].id)}>
               Continue
-              <IconArrowRight className="h-4 w-4" aria-hidden />
-            </button>
+              <ArrowRight data-icon="inline-end" />
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={onAnalyze}
-              disabled={loading}
-              className="btn-primary"
-            >
+            <Button onClick={onAnalyze} disabled={loading}>
               {loading ? (
-                <>
-                  <IconLoader
-                    className="h-4 w-4 animate-spin"
-                    aria-hidden
-                  />
-                  Analyzing…
-                </>
+                <Loader2 data-icon="inline-start" className="animate-spin" />
               ) : (
-                <>
-                  <IconSpark className="h-4 w-4" aria-hidden />
-                  Analyze as Andromeda
-                </>
+                <Sparkles data-icon="inline-start" />
               )}
-            </button>
+              {loading ? "Analyzing…" : "Run analysis"}
+            </Button>
           )}
-        </div>
-      </div>
-
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger"
-        >
-          {error}
-        </p>
-      ) : null}
-    </section>
+        </CardFooter>
+      </Tabs>
+    </Card>
   );
 }

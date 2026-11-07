@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-
-const btn =
-  "rounded-lg border border-meta/40 px-2.5 py-1 text-xs text-meta-bright hover:bg-meta/10 disabled:opacity-50";
+import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /** Admin-only billing actions: Upgrade (Free) and/or Manage billing (has a Stripe customer). */
 export function BillingButton({
@@ -14,7 +19,6 @@ export function BillingButton({
   canManage: boolean;
 }) {
   const [busy, setBusy] = useState(false);
-  const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function go(path: string, body?: object) {
@@ -33,30 +37,39 @@ export function BillingButton({
 
   return (
     <div className="flex items-center gap-2">
-      {canUpgrade &&
-        (choosing ? (
-          <>
-            <button type="button" disabled={busy} className={btn}
-              onClick={() => go("/api/billing/checkout", { interval: "month" })}>
-              RM 99 / month
-            </button>
-            <button type="button" disabled={busy} className={btn}
-              onClick={() => go("/api/billing/checkout", { interval: "year" })}>
-              RM 990 / year
-            </button>
-          </>
-        ) : (
-          <button type="button" className={`${btn} bg-meta/10`} onClick={() => setChoosing(true)}>
-            Upgrade
-          </button>
-        ))}
-      {canManage && (
-        <button type="button" disabled={busy} className={btn}
-          onClick={() => go("/api/billing/portal")}>
-          Manage billing
-        </button>
+      {canUpgrade && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" disabled={busy}>
+              Upgrade
+              <ChevronDown data-icon="inline-end" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={() => go("/api/billing/checkout", { interval: "month" })}
+            >
+              Pro · RM 99 / month
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => go("/api/billing/checkout", { interval: "year" })}
+            >
+              Pro · RM 990 / year
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
-      {error && <span className="text-amber-400">{error}</span>}
+      {canManage && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => go("/api/billing/portal")}
+        >
+          Manage billing
+        </Button>
+      )}
+      {error && <span className="text-xs text-warn">{error}</span>}
     </div>
   );
 }

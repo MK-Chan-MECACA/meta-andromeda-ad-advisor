@@ -1,75 +1,66 @@
-"use client";
-
+import { Check, Info, X } from "lucide-react";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import { VerdictBanner } from "@/components/VerdictBanner";
 import { Scorecard } from "@/components/Scorecard";
 import { FixesList } from "@/components/FixesList";
-import { IconCheck, IconX } from "@/components/Icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-function StageBlock({
+function Section({
   title,
+  description,
   children,
 }: {
   title: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-ink-700 bg-ink-900/35 p-5 transition duration-200 hover:border-ink-500">
-      <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
-        {title}
-      </h3>
-      <div className="mt-3 space-y-2 text-sm leading-relaxed text-ink-300">
-        {children}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
-function BulletList({
-  items,
-  tone,
-}: {
-  items: string[];
-  tone: "good" | "bad";
-}) {
+function BulletList({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
+  const Icon = tone === "good" ? Check : X;
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y">
       {items.map((item) => (
-        <li
-          key={item}
-          className={[
-            "flex gap-3 rounded-xl border px-3 py-3 text-sm leading-relaxed",
-            tone === "good"
-              ? "border-pass/25 bg-pass/5 text-ink-100"
-              : "border-danger/25 bg-danger/5 text-ink-100",
-          ].join(" ")}
-        >
-          <span
-            className={[
-              "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md",
-              tone === "good"
-                ? "bg-pass/15 text-pass"
-                : "bg-danger/15 text-danger",
-            ].join(" ")}
-          >
-            {tone === "good" ? (
-              <IconCheck className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <IconX className="h-3.5 w-3.5" aria-hidden />
-            )}
-          </span>
-          <span>{item}</span>
+        <li key={item} className="flex gap-3 py-2.5 first:pt-0 last:pb-0">
+          <Icon
+            className={`mt-0.5 size-4 shrink-0 ${tone === "good" ? "text-pass" : "text-fail"}`}
+            aria-hidden
+          />
+          <span className="leading-relaxed">{item}</span>
         </li>
       ))}
     </ul>
   );
 }
 
-function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
+/** Label/value grid used inside each pipeline stage. */
+function Fields({ rows }: { rows: [string, React.ReactNode][] }) {
   return (
-    <p>
-      <span className="text-ink-500">{label}:</span> {value}
-    </p>
+    <dl className="grid gap-x-4 gap-y-2.5 sm:grid-cols-[9rem_1fr]">
+      {rows.map(([label, value]) => (
+        <div key={label} className="contents">
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="leading-relaxed">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -77,106 +68,87 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
   const { retrieval, ranking, learning, eligibility, scorecard } = analysis;
 
   return (
-    <section className="space-y-10" aria-label="Analysis results">
-      <div className="space-y-2">
-        <p className="font-display text-xs tracking-[0.2em] text-meta-bright uppercase">
-          Results
-        </p>
-        <h2 className="font-display text-2xl text-ink-50 sm:text-3xl">
-          Diagnosis
-        </h2>
-      </div>
+    <section className="flex flex-col gap-4" aria-label="Analysis results">
+      <VerdictBanner verdict={analysis.verdict} bottomLine={analysis.bottomLine} />
 
-      <VerdictBanner
-        verdict={analysis.verdict}
-        bottomLine={analysis.bottomLine}
-      />
-
-      <div className="space-y-3">
-        <h3 className="font-display text-lg text-ink-50">Scorecard</h3>
+      <Section title="Scorecard">
         <Scorecard scorecard={scorecard} />
-      </div>
+      </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3">
-          <h3 className="font-display text-lg text-pass">What went well</h3>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="What went well">
           <BulletList items={analysis.whatWentWell} tone="good" />
-        </div>
-        <div className="space-y-3">
-          <h3 className="font-display text-lg text-danger">What went wrong</h3>
+        </Section>
+        <Section title="What went wrong">
           <BulletList items={analysis.whatWentWrong} tone="bad" />
-        </div>
+        </Section>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="font-display text-lg text-ink-50">Pipeline stages</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <StageBlock title="Stage 0 — Eligibility">
-            <p>{eligibility.summary}</p>
-            {eligibility.blockers.length > 0 ? (
-              <ul className="list-disc space-y-1 pl-5 text-warn">
-                {eligibility.blockers.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-ink-500">No hard blockers noted.</p>
-            )}
-          </StageBlock>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Section title="Stage 0 · Eligibility" description={eligibility.summary}>
+          {eligibility.blockers.length > 0 ? (
+            <ul className="flex flex-col gap-1.5">
+              {eligibility.blockers.map((b) => (
+                <li key={b} className="flex gap-2 text-warn">
+                  <X className="mt-0.5 size-4 shrink-0" aria-hidden />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">No hard blockers noted.</p>
+          )}
+        </Section>
 
-          <StageBlock title="Stage 1 — Retrieval (ticket)">
-            <MetaRow label="Semantic node" value={retrieval.semanticNode} />
-            <MetaRow
-              label="Ticket count"
-              value={
+        <Section title="Stage 1 · Retrieval">
+          <Fields
+            rows={[
+              ["Grade", <Badge key="g" variant="secondary" className="font-mono">{retrieval.grade}</Badge>],
+              ["Semantic node", retrieval.semanticNode],
+              [
+                "Ticket count",
                 <>
-                  {retrieval.ticketCount} — {retrieval.ticketRationale}
-                </>
-              }
-            />
-            <MetaRow label="Cage check" value={retrieval.cageCheck} />
-            <MetaRow label="Congruence" value={retrieval.congruence} />
-            <MetaRow
-              label="Grade"
-              value={
-                <span className="font-display text-meta-bright">
-                  {retrieval.grade}
-                </span>
-              }
-            />
-          </StageBlock>
+                  <span className="font-mono tabular-nums">{retrieval.ticketCount}</span>
+                  <span className="text-muted-foreground"> — {retrieval.ticketRationale}</span>
+                </>,
+              ],
+              ["Cage check", retrieval.cageCheck],
+              ["Congruence", retrieval.congruence],
+            ]}
+          />
+        </Section>
 
-          <StageBlock title="Stage 2 — Ranking & auction">
-            <MetaRow label="EAR fit" value={ranking.earFit} />
-            <MetaRow label="Quality / thumb-stop" value={ranking.quality} />
-            <MetaRow label="Formula risk" value={ranking.formulaRisk} />
-          </StageBlock>
+        <Section title="Stage 2 · Ranking & auction">
+          <Fields
+            rows={[
+              ["EAR fit", ranking.earFit],
+              ["Quality / thumb-stop", ranking.quality],
+              ["Formula risk", ranking.formulaRisk],
+            ]}
+          />
+        </Section>
 
-          <StageBlock title="Learning & timing">
-            <p>{learning.summary}</p>
-            <MetaRow label="Budget guidance" value={learning.budgetGuidance} />
-          </StageBlock>
-        </div>
+        <Section title="Learning & timing" description={learning.summary}>
+          <Fields rows={[["Budget guidance", learning.budgetGuidance]]} />
+        </Section>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="font-display text-lg text-ink-50">
-          Fixes (priority order)
-        </h3>
+      <Section title="Fixes" description="In priority order.">
         <FixesList fixes={analysis.fixes} />
-      </div>
+      </Section>
 
       {analysis.missingInputs.length > 0 ? (
-        <div className="rounded-2xl border border-ink-700 bg-ink-900/30 px-5 py-5">
-          <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
-            What I still need
-          </h3>
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-300">
-            {analysis.missingInputs.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
+        <Alert>
+          <Info />
+          <AlertTitle>What I still need</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {analysis.missingInputs.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       ) : null}
     </section>
   );

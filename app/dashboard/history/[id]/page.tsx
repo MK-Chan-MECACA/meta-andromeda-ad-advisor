@@ -5,6 +5,9 @@ import { requireWorkspace, isUuid } from "@/lib/workspace";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import { DeleteAnalysisButton } from "./DeleteAnalysisButton";
+import { ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 
 export default async function AnalysisPage({
@@ -22,26 +25,41 @@ export default async function AnalysisPage({
   const canDelete = ws.isAdmin || row.created_by === ws.userId;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
-      <div className="mb-6 flex items-center gap-4 text-sm text-ink-300">
-        <Link href="/dashboard/history" className="hover:text-ink-50">
-          ← History
-        </Link>
-        {row.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/analyses/${id}/thumbnail`}
-            alt=""
-            className="h-10 w-10 rounded-lg object-cover"
-          />
-        ) : null}
-        <span>{new Date(row.created_at as string).toLocaleString("en-MY")}</span>
-        <span className="font-code text-xs">{row.model as string}</span>
-        {canDelete ? (
-          <span className="ml-auto">
-            <DeleteAnalysisButton id={id} />
-          </span>
-        ) : null}
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="flex flex-col gap-4">
+        <Button asChild variant="ghost" size="sm" className="w-fit">
+          <Link href="/dashboard/history">
+            <ArrowLeft data-icon="inline-start" />
+            History
+          </Link>
+        </Button>
+        <header className="flex flex-wrap items-center gap-4">
+          {row.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/analyses/${id}/thumbnail`}
+              alt=""
+              className="size-12 rounded-md border object-cover"
+            />
+          ) : null}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Analysis</h1>
+            <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              {new Date(row.created_at as string).toLocaleString("en-MY", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+              <Badge variant="outline" className="font-mono">
+                {row.model as string}
+              </Badge>
+            </p>
+          </div>
+          {canDelete ? (
+            <div className="ml-auto">
+              <DeleteAnalysisButton id={id} />
+            </div>
+          ) : null}
+        </header>
       </div>
       <ResultsDashboard analysis={row.result as AnalysisResult} />
     </main>

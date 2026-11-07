@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
-import { IconImage, IconMonitor, IconX } from "@/components/Icons";
+import { Image as ImageIcon, Monitor, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ClientImage, ImageKind } from "@/lib/types";
 import { MAX_IMAGE_BYTES } from "@/lib/analysis-schema";
 
@@ -39,7 +41,7 @@ export function ImageDropzone({
 
   const ofKind = images.filter((img) => img.kind === kind);
   const remaining = maxCount - images.length;
-  const Icon = kind === "creative" ? IconImage : IconMonitor;
+  const Icon = kind === "creative" ? ImageIcon : Monitor;
 
   const ingestFiles = useCallback(
     async (fileList: FileList | File[]) => {
@@ -76,13 +78,13 @@ export function ImageDropzone({
   );
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="flex items-center gap-2 font-display text-sm tracking-wide text-ink-100 uppercase">
-          <Icon className="h-4 w-4 text-meta-bright" aria-hidden />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-sm font-medium">
+          <Icon className="size-4 text-muted-foreground" aria-hidden />
           {label}
         </h3>
-        <span className="font-display text-xs text-ink-400 tabular-nums">
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">
           {ofKind.length} attached · {Math.max(remaining, 0)} left
         </span>
       </div>
@@ -99,32 +101,16 @@ export function ImageDropzone({
           setDragOver(false);
           void ingestFiles(e.dataTransfer.files);
         }}
-        className={[
-          "group flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-8 text-center transition duration-200",
-          dragOver
-            ? "border-meta bg-meta/15 shadow-[0_0_32px_rgba(37,99,235,0.2)]"
-            : "border-ink-600 bg-ink-950/50 hover:border-meta/40 hover:bg-ink-900/60",
-        ].join(" ")}
+        className={cn(
+          "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+          dragOver ? "border-primary bg-primary/10" : "hover:border-ring/60 hover:bg-muted/40",
+        )}
       >
-        <span
-          className={[
-            "flex h-12 w-12 items-center justify-center rounded-xl transition duration-200",
-            dragOver
-              ? "bg-meta/25 text-meta-bright"
-              : "bg-ink-800 text-ink-300 group-hover:bg-meta/15 group-hover:text-meta-bright",
-          ].join(" ")}
-        >
-          <Icon className="h-6 w-6" aria-hidden />
+        <Upload className="size-5 text-muted-foreground" aria-hidden />
+        <span className="text-sm font-medium">
+          Drop images or <span className="text-primary">browse</span>
         </span>
-        <span className="font-display text-base text-ink-50">
-          Drop images here
-        </span>
-        <span className="max-w-xs text-sm leading-relaxed text-ink-300">
-          {hint}
-        </span>
-        <span className="rounded-full border border-ink-600 px-3 py-1 text-xs text-ink-400 transition group-hover:border-ink-400 group-hover:text-ink-200">
-          or click to browse
-        </span>
+        <span className="max-w-xs text-xs leading-relaxed text-muted-foreground">{hint}</span>
         <input
           id={inputId}
           type="file"
@@ -139,33 +125,28 @@ export function ImageDropzone({
       </label>
 
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
 
       {ofKind.length > 0 ? (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <ul className="grid grid-cols-3 gap-2">
           {ofKind.map((img) => (
-            <li
-              key={img.id}
-              className="group relative overflow-hidden rounded-xl border border-ink-700 bg-ink-900"
-            >
+            <li key={img.id} className="group relative overflow-hidden rounded-md border bg-muted">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.dataUrl}
-                alt={img.name}
-                className="aspect-[4/5] w-full object-cover"
-              />
-              <button
+              <img src={img.dataUrl} alt={img.name} className="aspect-[4/5] w-full object-cover" />
+              <Button
                 type="button"
+                size="icon-xs"
+                variant="secondary"
                 onClick={() => onRemove(img.id)}
                 aria-label={`Remove ${img.name}`}
-                className="absolute top-2 right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-ink-950/85 text-ink-50 opacity-100 transition duration-200 hover:bg-danger/90 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute top-1.5 right-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
               >
-                <IconX className="h-4 w-4" aria-hidden />
-              </button>
-              <p className="truncate px-2.5 py-2 text-xs text-ink-400">
+                <X />
+              </Button>
+              <p className="truncate border-t bg-card px-2 py-1 text-xs text-muted-foreground">
                 {img.name}
               </p>
             </li>

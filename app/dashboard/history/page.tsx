@@ -2,13 +2,18 @@ import Link from "next/link";
 import { clerkClient } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { requireWorkspace } from "@/lib/workspace";
-
-const VERDICT_STYLE: Record<string, string> = {
-  PASS: "text-emerald-400",
-  AT_RISK: "text-amber-400",
-  FAIL: "text-rose-400",
-  UNKNOWN: "text-ink-300",
-};
+import { History } from "lucide-react";
+import { VerdictBadge } from "@/components/VerdictBanner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function HistoryPage() {
   const ws = await requireWorkspace();
@@ -32,53 +37,92 @@ export default async function HistoryPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8">
-      <h1 className="font-display text-3xl tracking-tight">History</h1>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <header className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">History</h1>
+          <p className="text-sm text-muted-foreground">
+            {rows.length
+              ? `${rows.length} ${rows.length === 1 ? "analysis" : "analyses"} in this workspace${rows.length === 100 ? " (latest 100)" : ""}.`
+              : "Analyses run in this workspace appear here."}
+          </p>
+        </div>
+        <Button asChild size="sm">
+          <Link href="/dashboard">New analysis</Link>
+        </Button>
+      </header>
+
       {rows.length === 0 ? (
-        <p className="mt-6 text-ink-300">
-          No analyses yet.{" "}
-          <Link href="/dashboard" className="text-meta-bright underline">
-            Run your first one
-          </Link>
-          .
-        </p>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <History className="size-8 text-muted-foreground" aria-hidden />
+            <div>
+              <p className="font-medium">No analyses yet</p>
+              <p className="text-sm text-muted-foreground">Run your first one to see it here.</p>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/dashboard">Run an analysis</Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="mt-6 divide-y divide-ink-800">
-          {rows.map((r) => (
-            <li key={r.id as string}>
-              <Link
-                href={`/dashboard/history/${r.id}`}
-                className="flex items-center gap-4 py-4 hover:bg-ink-900/60"
-              >
-                {r.thumbnail_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/analyses/${r.id}/thumbnail`}
-                    alt=""
-                    className="h-12 w-12 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg bg-ink-800" aria-hidden />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink-50">
-                    {(r.headline as string) || (r.bottom_line as string)}
-                  </p>
-                  <p className="text-xs text-ink-400">
-                    {new Date(r.created_at as string).toLocaleString("en-MY")}
-                    {" · "}
-                    {authorName(r.created_by as string | null)}
-                  </p>
-                </div>
-                <span
-                  className={`font-display text-xs tracking-wider ${VERDICT_STYLE[r.verdict as string] ?? ""}`}
-                >
-                  {r.verdict as string}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Card className="py-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16 pl-4">
+                  <span className="sr-only">Creative</span>
+                </TableHead>
+                <TableHead>Ad</TableHead>
+                <TableHead className="w-32">Verdict</TableHead>
+                <TableHead className="hidden w-40 md:table-cell">Run by</TableHead>
+                <TableHead className="w-44 pr-4 text-right">Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => {
+                const href = `/dashboard/history/${r.id}`;
+                return (
+                  <TableRow key={r.id as string} className="relative">
+                    <TableCell className="pl-4">
+                      {r.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`/api/analyses/${r.id}/thumbnail`}
+                          alt=""
+                          className="size-10 rounded-md object-cover"
+                        />
+                      ) : (
+                        <div className="size-10 rounded-md bg-muted" aria-hidden />
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-0">
+                      {/* Stretched link: the whole row is clickable. */}
+                      <Link
+                        href={href}
+                        className="block truncate font-medium after:absolute after:inset-0"
+                      >
+                        {(r.headline as string) || (r.bottom_line as string)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <VerdictBadge verdict={r.verdict as string} />
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">
+                      {authorName(r.created_by as string | null)}
+                    </TableCell>
+                    <TableCell className="pr-4 text-right font-mono text-xs text-muted-foreground tabular-nums">
+                      {new Date(r.created_at as string).toLocaleString("en-MY", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </main>
   );
