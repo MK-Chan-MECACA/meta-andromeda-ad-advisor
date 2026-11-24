@@ -10,7 +10,12 @@ import {
   ANDROMEDA_SYSTEM_PROMPT,
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
-import { clientIp, takeRateLimitToken } from "@/lib/rate-limit";
+import {
+  clientIp,
+  releaseInFlight,
+  takeRateLimitToken,
+  tryAcquireInFlight,
+} from "@/lib/rate-limit";
 
 export const maxDuration = 120;
 
@@ -19,6 +24,7 @@ const MAX_TOTAL_IMAGE_BYTES = 16 * 1024 * 1024;
 
 const RATE_LIMIT = Number(process.env.ANALYZE_RATE_LIMIT_PER_MIN ?? "5");
 const RATE_WINDOW_MS = 60_000;
+const MAX_IN_FLIGHT = Number(process.env.ANALYZE_MAX_IN_FLIGHT ?? "2");
 
 function estimateDataUrlBytes(dataUrl: string): number {
   const base64 = dataUrl.split(",")[1] ?? "";
@@ -33,11 +39,14 @@ function allowedExtraOrigins(): string[] {
 }
 
 function originAllowed(req: Request): boolean {
+  const allowNonBrowser = process.env.ANALYZE_ALLOW_MISSING_ORIGIN === "1";
   const origin = req.headers.get("origin");
-  // Browser POSTs always send Origin. Missing Origin is only for non-browser
-  // clients; require an explicit opt-in so curl cannot skip the gate.
-  if (!origin) {
-    return process.env.ANALYZE_ALLOW_MISSING_ORIGIN === "1";
+  const fetchSite = (req.headers.get("sec-fetch-site") ?? "").toLowerCase();
+
+  // Browser fetch always sends Origin + Sec-Fetch-Site. Missing either means
+  // a non-browser client — do not trust a forged Origin alone.
+  if (!origin || !fetchSite) {
+    return allowNonBrowser;
   }
 
   let requestOrigin: string;
@@ -47,13 +56,21 @@ function originAllowed(req: Request): boolean {
     return false;
   }
 
-  if (origin === requestOrigin) return true;
-
   const extras = allowedExtraOrigins();
-  if (extras.includes(origin)) return true;
 
-  // Reject other cross-site browser calls after the allowlist check so
-  // ANALYZE_ALLOWED_ORIGINS still works for preview/custom hosts.
+  if (fetchSite === "same-origin" || fetchSite === "same-site") {
+    return origin === requestOrigin || extras.includes(origin);
+  }
+
+  // Listed preview/custom hosts are intentionally cross-site.
+  if (fetchSite === "cross-site") {
+    return extras.includes(origin);
+  }
+
+  if (fetchSite === "none") {
+    return origin === requestOrigin;
+  }
+
   return false;
 }
 
@@ -77,6 +94,25 @@ export async function POST(req: Request) {
     );
   }
 
+  const slot = tryAcquireInFlight(MAX_IN_FLIGHT);
+  if (!slot.ok) {
+    return NextResponse.json(
+      { error: "Analyze is busy. Retry in a few seconds." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(slot.retryAfterSec) },
+      },
+    );
+  }
+
+  try {
+    return await runAnalyze(req, ip, token.remaining);
+  } finally {
+    releaseInFlight();
+  }
+}
+
+async function runAnalyze(req: Request, ip: string, remaining: number) {
   let body: unknown;
   try {
     body = await req.json();
@@ -141,7 +177,7 @@ export async function POST(req: Request) {
   }
 
   console.info(
-    `[analyze] ip=${ip} images=${data.images.length} bytes=${totalImageBytes} mode=${data.mode} remaining=${token.remaining}`,
+    `[analyze] ip=${ip} images=${data.images.length} bytes=${totalImageBytes} mode=${data.mode} remaining=${remaining}`,
   );
 
   const creatives = data.images.filter((img) => img.kind === "creative");

@@ -4,9 +4,12 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
+/** Per-isolate in-flight analyze jobs (caps concurrent Grok spend on one lambda). */
+let inFlight = 0;
+
 /**
  * Best-effort in-memory sliding window.
- * Per-isolate only on Vercel — pair with Origin gate; use KV for global caps.
+ * Per-isolate only on Vercel — pair with Origin/Sec-Fetch gate; use KV for global caps.
  */
 export function takeRateLimitToken(
   key: string,
@@ -40,6 +43,21 @@ export function takeRateLimitToken(
   }
 
   return { ok: true, remaining: Math.max(0, limit - bucket.timestamps.length) };
+}
+
+export function tryAcquireInFlight(
+  max: number,
+): { ok: true } | { ok: false; retryAfterSec: number } {
+  const cap = Number.isFinite(max) && max > 0 ? max : 2;
+  if (inFlight >= cap) {
+    return { ok: false, retryAfterSec: 5 };
+  }
+  inFlight += 1;
+  return { ok: true };
+}
+
+export function releaseInFlight(): void {
+  inFlight = Math.max(0, inFlight - 1);
 }
 
 export function clientIp(req: Request): string {
