@@ -42,6 +42,14 @@ export type IntakeFormState = {
     qualityRanking: string;
     notes: string;
   };
+  signals: {
+    pixelCapi: string;
+    emq: string;
+    valueOptimization: string;
+    valueRules: string;
+    landingCx: string;
+    advantagePlusCampaign: string;
+  };
 };
 
 export const emptyIntakeForm = (): IntakeFormState => ({
@@ -74,6 +82,14 @@ export const emptyIntakeForm = (): IntakeFormState => ({
     learningStatus: "",
     qualityRanking: "",
     notes: "",
+  },
+  signals: {
+    pixelCapi: "",
+    emq: "",
+    valueOptimization: "",
+    valueRules: "",
+    landingCx: "",
+    advantagePlusCampaign: "",
   },
 });
 

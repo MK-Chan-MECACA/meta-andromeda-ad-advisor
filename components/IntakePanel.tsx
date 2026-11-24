@@ -49,8 +49,8 @@ const STEPS = [
   },
   {
     id: "metrics",
-    label: "Metrics",
-    hint: "Optional live results",
+    label: "Signals",
+    hint: "Pixel, EMQ, Advantage+ & results",
     Icon: IconChart,
   },
 ] as const;
@@ -100,6 +100,8 @@ export function IntakePanel({
     onChange({ ...form, setup: { ...form.setup, [key]: value } });
   const setMetrics = (key: keyof IntakeFormState["metrics"], value: string) =>
     onChange({ ...form, metrics: { ...form.metrics, [key]: value } });
+  const setSignals = (key: keyof IntakeFormState["signals"], value: string) =>
+    onChange({ ...form, signals: { ...form.signals, [key]: value } });
 
   const addImages = (images: ClientImage[]) => {
     const next = [...form.images, ...images].slice(0, MAX_IMAGES);
@@ -467,37 +469,137 @@ export function IntakePanel({
         ) : null}
 
         {step === "metrics" ? (
-          <div className="space-y-5">
-            <div className="rounded-xl border border-accent/25 bg-accent/5 px-4 py-3 text-sm text-ink-200">
-              Optional — leave blank and live performance stays{" "}
-              <span className="font-medium text-accent-bright">Unknown</span>.
-              I will not invent ROAS success.
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {(
-                [
-                  ["spend", "Spend"],
-                  ["ctr", "CTR"],
-                  ["cpc", "CPC"],
-                  ["cpa", "CPA / cost per result"],
-                  ["frequency", "Frequency"],
-                  ["learningStatus", "Learning status"],
-                  ["qualityRanking", "Quality rankings"],
-                  ["notes", "Notes"],
-                ] as const
-              ).map(([key, label]) => (
-                <Field key={key} label={label} htmlFor={`${baseId}-${key}`}>
-                  <input
-                    id={`${baseId}-${key}`}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
+                Signal hygiene & Advantage+
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Pixel / CAPI" htmlFor={`${baseId}-pixel`}>
+                  <select
+                    id={`${baseId}-pixel`}
                     className="input-field"
-                    value={form.metrics[key]}
-                    onChange={(e) => setMetrics(key, e.target.value)}
-                    placeholder={
-                      key === "notes" ? "Funnel notes, EMQ, Pixel…" : undefined
-                    }
+                    value={form.signals.pixelCapi}
+                    onChange={(e) => setSignals("pixelCapi", e.target.value)}
+                  >
+                    <option value="">Select…</option>
+                    <option value="pixel_capi">Pixel + CAPI</option>
+                    <option value="pixel_only">Pixel only</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="EMQ score"
+                  htmlFor={`${baseId}-emq`}
+                  hint="Event Match Quality 0–10 if known"
+                >
+                  <input
+                    id={`${baseId}-emq`}
+                    className="input-field"
+                    value={form.signals.emq}
+                    onChange={(e) => setSignals("emq", e.target.value)}
+                    placeholder="e.g. 7.2"
                   />
                 </Field>
-              ))}
+                <Field
+                  label="Value optimization"
+                  htmlFor={`${baseId}-value-opt`}
+                >
+                  <select
+                    id={`${baseId}-value-opt`}
+                    className="input-field"
+                    value={form.signals.valueOptimization}
+                    onChange={(e) =>
+                      setSignals("valueOptimization", e.target.value)
+                    }
+                  >
+                    <option value="">Select…</option>
+                    <option value="on">On</option>
+                    <option value="off">Off</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Advantage+ campaign"
+                  htmlFor={`${baseId}-asc`}
+                  hint="Full Advantage+ sales/ASC vs manual"
+                >
+                  <select
+                    id={`${baseId}-asc`}
+                    className="input-field"
+                    value={form.signals.advantagePlusCampaign}
+                    onChange={(e) =>
+                      setSignals("advantagePlusCampaign", e.target.value)
+                    }
+                  >
+                    <option value="">Select…</option>
+                    <option value="yes">Yes — full Advantage+</option>
+                    <option value="partial">Partial (audience/placements)</option>
+                    <option value="no">No — manual cages</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Value rules"
+                  htmlFor={`${baseId}-value-rules`}
+                  hint="New customer / high AOV weights…"
+                >
+                  <input
+                    id={`${baseId}-value-rules`}
+                    className="input-field"
+                    value={form.signals.valueRules}
+                    onChange={(e) => setSignals("valueRules", e.target.value)}
+                    placeholder="e.g. new customers 1.5x"
+                  />
+                </Field>
+                <Field
+                  label="Landing / CX notes"
+                  htmlFor={`${baseId}-cx`}
+                  hint="Checkout friction, shipping, misleading claims…"
+                >
+                  <input
+                    id={`${baseId}-cx`}
+                    className="input-field"
+                    value={form.signals.landingCx}
+                    onChange={(e) => setSignals("landingCx", e.target.value)}
+                    placeholder="Slow checkout, 7-day shipping…"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border border-accent/25 bg-accent/5 px-4 py-3 text-sm text-ink-200">
+                Live metrics optional — leave blank and performance stays{" "}
+                <span className="font-medium text-accent-bright">Unknown</span>.
+                I will not invent ROAS success.
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {(
+                  [
+                    ["spend", "Spend"],
+                    ["ctr", "CTR"],
+                    ["cpc", "CPC"],
+                    ["cpa", "CPA / cost per result"],
+                    ["frequency", "Frequency"],
+                    ["learningStatus", "Learning status"],
+                    ["qualityRanking", "Quality rankings"],
+                    ["notes", "Notes"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Field key={key} label={label} htmlFor={`${baseId}-${key}`}>
+                    <input
+                      id={`${baseId}-${key}`}
+                      className="input-field"
+                      value={form.metrics[key]}
+                      onChange={(e) => setMetrics(key, e.target.value)}
+                      placeholder={
+                        key === "notes" ? "Funnel notes…" : undefined
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}

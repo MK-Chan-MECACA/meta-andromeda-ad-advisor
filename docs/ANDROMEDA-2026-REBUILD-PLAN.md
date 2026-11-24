@@ -1,6 +1,6 @@
 # Andromeda Advisor — 2026 Rebuild Plan
 
-**Status:** Phase A ✅ + Phase B shipping (portfolio diversity on this branch)  
+**Status:** Phases A–C shipping on this branch (signals / Advantage+ / export / drafts)  
 **Branch:** `cursor/andromeda-2026-rebuild-plan-de98`  
 **Primary sources dated:** 13–28 Oct 2026 (Asia/Kuala_Lumpur)
 
@@ -204,10 +204,10 @@ Hero budget: brand + one line + CTA into intake — no marketing stat spam using
 - Multi-creative intake + diversity matrix + ticket collapse UI.
 - Meta: multi-select / select-ad-set import (read-only), up to 8 creatives.
 
-### Phase C — Signals & Advantage+ co-pilot
+### Phase C — Signals & Advantage+ co-pilot ✅ (this branch)
 
-- Value opt / EMQ / CX checklist; Advantage+ adoption score.
-- Export + session draft persistence.
+- Value opt / EMQ / CX checklist; Advantage+ adoption + signal hygiene grades.
+- Markdown export / copy; localStorage intake draft persistence.
 
 ### Phase D — Hardening
 

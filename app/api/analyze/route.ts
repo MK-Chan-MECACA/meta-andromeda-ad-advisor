@@ -82,6 +82,7 @@ export async function POST(req: Request) {
     copy: data.copy,
     setup: data.setup,
     metrics: data.metrics,
+    signals: data.signals,
     imageLabels,
     creativeCount: creatives.length,
   });

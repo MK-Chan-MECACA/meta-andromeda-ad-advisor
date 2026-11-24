@@ -151,6 +151,43 @@ export const analysisResultSchema = z.object({
         "Near-duplicate pairs/groups that collapse to one ticket; empty if none",
       ),
   }),
+  signals: z.object({
+    advantagePlus: z.object({
+      grade: letterGradeSchema.describe(
+        "How fully Advantage+ / broad automation is adopted vs manual cages",
+      ),
+      note: z.string(),
+    }),
+    signalHygiene: z.object({
+      grade: letterGradeSchema.describe(
+        "Pixel + CAPI + EMQ readiness for EAR training",
+      ),
+      note: z.string(),
+    }),
+    valueOptFit: z
+      .string()
+      .describe(
+        "Whether value optimization / value rules match the business outcome",
+      ),
+    cxRisk: z
+      .string()
+      .describe(
+        "Post-click / landing / fulfillment CX risks that hit Ad Quality",
+      ),
+    checklist: z
+      .array(
+        z.object({
+          item: z.string(),
+          status: z.enum(["pass", "warn", "fail", "unknown"]),
+          note: z.string(),
+        }),
+      )
+      .min(3)
+      .max(10)
+      .describe(
+        "Operator checklist covering Advantage+, Pixel/CAPI, EMQ, value opt, CX",
+      ),
+  }),
   missingInputs: z
     .array(z.string())
     .describe("What would sharpen the diagnosis; empty if nothing missing"),
@@ -238,12 +275,40 @@ const metricsSchema = z
     notes: "",
   });
 
+const signalsSchema = z
+  .object({
+    pixelCapi: z
+      .enum(["pixel_only", "pixel_capi", "unknown", ""])
+      .optional()
+      .default(""),
+    emq: z.string().max(50).optional().default(""),
+    valueOptimization: z
+      .enum(["on", "off", "unknown", ""])
+      .optional()
+      .default(""),
+    valueRules: z.string().max(1000).optional().default(""),
+    landingCx: z.string().max(2000).optional().default(""),
+    advantagePlusCampaign: z
+      .enum(["yes", "partial", "no", "unknown", ""])
+      .optional()
+      .default(""),
+  })
+  .default({
+    pixelCapi: "",
+    emq: "",
+    valueOptimization: "",
+    valueRules: "",
+    landingCx: "",
+    advantagePlusCampaign: "",
+  });
+
 export const analyzeRequestSchema = z.object({
   mode: z.enum(["single", "portfolio"]).default("single"),
   images: z.array(imageInputSchema).max(MAX_IMAGES).default([]),
   copy: copySchema,
   setup: setupSchema,
   metrics: metricsSchema,
+  signals: signalsSchema,
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;

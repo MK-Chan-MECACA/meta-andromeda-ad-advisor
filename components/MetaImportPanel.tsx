@@ -212,6 +212,10 @@ export function MetaImportPanel({
         copy: data.copy,
         setup: { ...data.setup, portfolioNotes: data.setup.portfolioNotes ?? "" },
         metrics: data.metrics,
+        signals: {
+          ...form.signals,
+          ...data.signals,
+        },
       });
     } catch {
       setError("Import failed.");
@@ -292,6 +296,10 @@ export function MetaImportPanel({
           ]
             .filter(Boolean)
             .join(" · "),
+        },
+        signals: {
+          ...form.signals,
+          ...primary.signals,
         },
       });
       setSelected(new Set());

@@ -357,5 +357,10 @@ export function mapAdToIntake(
         .filter(Boolean)
         .join(" · "),
     },
+    signals: {
+      ...base.signals,
+      advantagePlusCampaign:
+        t.mode === "advantage_plus" || t.mode === "broad" ? "partial" : "no",
+    },
   };
 }

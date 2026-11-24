@@ -81,6 +81,19 @@
         "References Format × Persona × Environment × Benefit diversification",
         "Prescribes true diversification over more minor iterations"
       ]
+    },
+    {
+      "id": 7,
+      "prompt": "Purchase campaign, US, broad targeting, Advantage+ shopping on. Pixel only, no CAPI, EMQ about 4. Value optimization off. Landing page has 4-step checkout and 10-day shipping. Creative is fine. What do signals and Advantage+ look like to Andromeda?",
+      "expected_output": "Praises Advantage+/broad. Flags Pixel-only + low EMQ as EAR risk, value opt off as miss for purchase value, CX/shipping as Ad Quality risk. Checklist with pass/warn/fail. Fixes prioritize CAPI/EMQ, value opt, CX.",
+      "files": [],
+      "expectations": [
+        "Credits Advantage+ / broad as aligned",
+        "Flags Pixel-only and/or low EMQ as signal hygiene risk",
+        "Mentions value optimization gap for purchase",
+        "Calls out post-click / checkout / shipping CX risk for Ad Quality",
+        "Includes checklist-style or prioritized signal fixes"
+      ]
     }
   ]
 }

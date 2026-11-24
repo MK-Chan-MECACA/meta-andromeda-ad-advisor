@@ -8,9 +8,10 @@ Diagnostic tool UI — not a marketing landing page. Prioritize clarity, progres
 ## Layout
 - Compact hero: brand chip + ANDROMEDA + one supporting line (MoE / eligible-ad framing)
 - Mode toggle on Assets: Single ad | Portfolio (diversity matrix)
-- Glass intake shell with 4-step wizard (Assets → Copy → Setup → Metrics)
-- Results appear below after analyze; auto-scroll to verdict
-- Results include pipeline strip, diversity matrix + ticket clusters, 2026 signal cards, and collapsed sources
+- Glass intake shell with 4-step wizard (Assets → Copy → Setup → Signals)
+- Signals step: Pixel/CAPI, EMQ, value opt, Advantage+, CX + optional live metrics
+- localStorage draft banner under hero; results export (copy / .md)
+- Results: pipeline strip, diversity matrix, signals panel, 2026 cards, sources
 
 ## Color (dark primary)
 | Role | Hex |

@@ -1,11 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import type { AnalysisResult } from "@/lib/analysis-schema";
 import { VerdictBanner } from "@/components/VerdictBanner";
 import { Scorecard } from "@/components/Scorecard";
 import { FixesList } from "@/components/FixesList";
 import { DiversityMatrix } from "@/components/DiversityMatrix";
+import { SignalsPanel } from "@/components/SignalsPanel";
 import { IconCheck, IconX } from "@/components/Icons";
+import {
+  analysisToMarkdown,
+  downloadMarkdown,
+} from "@/lib/export-markdown";
 
 const PIPELINE_STEPS = [
   "Eligibility",
@@ -137,16 +143,48 @@ function SourcesNote() {
 
 export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
   const { retrieval, ranking, learning, eligibility, scorecard } = analysis;
+  const [copied, setCopied] = useState(false);
+
+  function handleExport() {
+    const md = analysisToMarkdown(analysis);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadMarkdown(`andromeda-verdict-${stamp}.md`, md);
+  }
+
+  async function handleCopy() {
+    const md = analysisToMarkdown(analysis);
+    try {
+      await navigator.clipboard.writeText(md);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      handleExport();
+    }
+  }
 
   return (
     <section className="space-y-10" aria-label="Analysis results">
-      <div className="space-y-2">
-        <p className="font-display text-xs tracking-[0.2em] text-meta-bright uppercase">
-          Results
-        </p>
-        <h2 className="font-display text-2xl text-ink-50 sm:text-3xl">
-          Diagnosis
-        </h2>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-2">
+          <p className="font-display text-xs tracking-[0.2em] text-meta-bright uppercase">
+            Results
+          </p>
+          <h2 className="font-display text-2xl text-ink-50 sm:text-3xl">
+            Diagnosis
+          </h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void handleCopy()}
+            className="btn-ghost"
+          >
+            {copied ? "Copied" : "Copy markdown"}
+          </button>
+          <button type="button" onClick={handleExport} className="btn-primary min-w-0">
+            Export .md
+          </button>
+        </div>
       </div>
 
       <VerdictBanner
@@ -173,6 +211,8 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
       </div>
 
       <DiversityMatrix portfolio={analysis.portfolio} />
+
+      <SignalsPanel signals={analysis.signals} />
 
       <div className="space-y-3">
         <h3 className="font-display text-lg text-ink-50">2026 retrieval signals</h3>

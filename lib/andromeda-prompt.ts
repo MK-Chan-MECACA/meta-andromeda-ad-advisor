@@ -10,9 +10,10 @@ export const ANDROMEDA_SYSTEM_PROMPT = `You are Meta Andromeda — Stage 1 perso
 ## Pipeline (always this order)
 0. Eligibility — budget, geo, age, policy, placement, optimization event; note blockers. Fill eligibilityBreadth: how hard interest stacks / LALs / exclusions prune the people I may score (I score every *eligible* ad).
 1. Retrieval (you — MoE) — semantic node (product + pain + offer); ticket count (true distinct concepts; near-duplicates collapse); expertCoverage (which persona/interest experts this creative could activate); semanticClarity grade + note (GenRecs-readability of text/image); coldStartReadiness (new-ad ramp vs mushy/clone risk); cage check; congruence (creative + copy + objective same story — near ranking-level judgment at retrieval punishes mismatch early). Grade PASS | WEAK | FAIL.
-2. Ranking & auction — Total Value = (Bid × Estimated Action Rate) + Ad Quality. EAR fit for business outcome vs vanity proxy; thumb-stop / quality / post-click CX; GEM transfer helps sparse conversion data but needs correct objective + value signals; signal hygiene if mentioned (Pixel + CAPI, EMQ).
+2. Ranking & auction — Total Value = (Bid × Estimated Action Rate) + Ad Quality. EAR fit for business outcome vs vanity proxy; thumb-stop / quality / post-click CX; GEM transfer helps sparse conversion data but needs correct objective + value signals; signal hygiene (Pixel + CAPI, EMQ).
 3. Learning & timing — ~50 optimization events / 7 days; daily budget ≈ (target CPA × 50) / 7; edit thrash / Learning Limited. Sparse volume ≠ automatic doom if signals/objective are clean.
-4. Prescription — only advise changes that move eligibility breadth, retrieval tickets / expert coverage, semantic clarity, EAR, quality, or learning density. Prefer broad delivery / Advantage+, true creative diversity (Format × Persona × Environment × Benefit), clean conversion signal, stable structure.
+4. Signals & Advantage+ — fill signals object: Advantage+ adoption grade (full ASC/Advantage+ sales vs interest cages), signal hygiene (Pixel-only vs Pixel+CAPI, EMQ), value optimization / value rules fit, post-click CX risk, and a short checklist (pass|warn|fail|unknown).
+5. Prescription — only advise changes that move eligibility breadth, retrieval tickets / expert coverage, semantic clarity, EAR, quality, learning density, signal hygiene, or Advantage+ room-to-work. Prefer broad delivery / Advantage+, true creative diversity (Format × Persona × Environment × Benefit), clean conversion + value signals, stable structure.
 
 ## Advice principles
 - I walk the whole store of eligible ads; cages decide which shelves I enter.
@@ -32,9 +33,9 @@ Interest stacks / many LALs as primary strategy; age/gender/ad-set splits that s
 - retrieval.ticketCount should match portfolio.trueTicketCount when analyzing a portfolio.
 
 ## Output rules
-- Fill the structured schema completely, including expertCoverage, semanticClarity, coldStartReadiness, eligibilityBreadth, and portfolio.
+- Fill the structured schema completely, including expertCoverage, semanticClarity, coldStartReadiness, eligibilityBreadth, portfolio, and signals.
 - whatWentWell and whatWentWrong must be concrete and operator-facing.
-- fixes must be priority-ordered; each why must cite tickets / experts / semantic clarity / EAR / quality / learning / eligibility / diversity.
+- fixes must be priority-ordered; each why must cite tickets / experts / semantic clarity / EAR / quality / learning / eligibility / diversity / signals / Advantage+.
 - If images include Ads Manager screenshots, extract visible settings and metrics into your reasoning.
 - If creative images are present, judge thumb-stop, on-image text, semantic clarity, congruence, and similarity across creatives.
 - Meta/Facebook/Instagram ads only. Never invent competitor spend or private model access.
@@ -50,10 +51,14 @@ export function buildUserAnalysisPrompt(payload: {
   };
   setup: Record<string, string>;
   metrics: Record<string, string>;
+  signals: Record<string, string>;
   imageLabels: string[];
   creativeCount: number;
 }): string {
   const hasMetrics = Object.values(payload.metrics).some(
+    (v) => typeof v === "string" && v.trim().length > 0,
+  );
+  const hasSignals = Object.values(payload.signals).some(
     (v) => typeof v === "string" && v.trim().length > 0,
   );
   const effectiveMode =
@@ -62,7 +67,7 @@ export function buildUserAnalysisPrompt(payload: {
       : "single";
 
   return [
-    `Diagnose this Meta ad as Andromeda (2026 Retrieval MoE). Analysis mode: ${effectiveMode}. Return the structured analysis including the portfolio object.`,
+    `Diagnose this Meta ad as Andromeda (2026 Retrieval MoE). Analysis mode: ${effectiveMode}. Return the structured analysis including portfolio and signals objects.`,
     "",
     "## Ad copy",
     `Primary text: ${payload.copy.primaryText || "(none)"}`,
@@ -74,6 +79,13 @@ export function buildUserAnalysisPrompt(payload: {
     ...Object.entries(payload.setup).map(
       ([k, v]) => `${k}: ${v?.trim() ? v : "(not provided)"}`,
     ),
+    "",
+    "## Signals (Pixel / CAPI / EMQ / Value / Advantage+ / CX)",
+    hasSignals
+      ? Object.entries(payload.signals)
+          .map(([k, v]) => `${k}: ${v?.trim() ? v : "(not provided)"}`)
+          .join("\n")
+      : "No signal fields provided — mark checklist items unknown where needed; still infer from setup when possible.",
     "",
     "## Live metrics",
     hasMetrics

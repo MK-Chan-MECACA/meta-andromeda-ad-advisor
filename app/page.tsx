@@ -6,10 +6,9 @@ import { MetaImportPanel } from "@/components/MetaImportPanel";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { IconLoader, IconSpark } from "@/components/Icons";
 import type { AnalysisResult } from "@/lib/analysis-schema";
+import { useIntakeDraft } from "@/lib/use-intake-draft";
 import {
-  emptyIntakeForm,
   type AnalyzeResponse,
-  type IntakeFormState,
 } from "@/lib/types";
 
 function AnalyzingState() {
@@ -49,7 +48,7 @@ function AnalyzingState() {
 }
 
 export default function Home() {
-  const [form, setForm] = useState<IntakeFormState>(emptyIntakeForm);
+  const { form, setForm, savedAt, clearDraft } = useIntakeDraft();
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +72,7 @@ export default function Home() {
           copy: form.copy,
           setup: form.setup,
           metrics: form.metrics,
+          signals: form.signals,
         }),
       });
 
@@ -103,6 +103,19 @@ export default function Home() {
     }
   }
 
+  function handleClearDraft() {
+    clearDraft();
+    setAnalysis(null);
+    setError(null);
+  }
+
+  const draftLabel = savedAt
+    ? `Draft saved ${new Date(savedAt).toLocaleString(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+      })}`
+    : null;
+
   return (
     <div className="relative flex-1 overflow-x-hidden">
       <div
@@ -132,6 +145,18 @@ export default function Home() {
             Ads Manager screenshot — I diagnose MoE retrieval, expert coverage,
             auction fit, and learning so you can maximize conversion.
           </p>
+          {draftLabel ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-400">
+              <span>{draftLabel} (local)</span>
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="cursor-pointer text-meta-bright underline-offset-2 hover:underline"
+              >
+                Clear draft
+              </button>
+            </div>
+          ) : null}
         </header>
 
         <div className="animate-rise-delay mb-6">
