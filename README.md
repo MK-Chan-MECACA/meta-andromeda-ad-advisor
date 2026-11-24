@@ -4,6 +4,10 @@ Single-session dashboard that diagnoses Meta/Facebook/Instagram ads the way **An
 
 Powered by **xAI Grok** (`grok-4.5`) via the Vercel AI SDK.
 
+## Roadmap (2026 rebuild)
+
+Meta’s Oct 2026 Andromeda update (Retrieval MoE, fused GPU pipeline, GenRecs semantic retrieval, GEM central model) changes how this advisor should reason. See **[docs/ANDROMEDA-2026-REBUILD-PLAN.md](docs/ANDROMEDA-2026-REBUILD-PLAN.md)** for research notes, gap analysis, and phased build plan.
+
 ## Setup
 
 ```bash
