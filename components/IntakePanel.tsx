@@ -13,7 +13,12 @@ import {
   IconSpark,
   IconType,
 } from "@/components/Icons";
-import type { ClientImage, IntakeFormState } from "@/lib/types";
+import type { AnalysisMode, ClientImage, IntakeFormState } from "@/lib/types";
+import {
+  MAX_CREATIVE_IMAGES,
+  MAX_IMAGES,
+  MAX_SCREENSHOT_IMAGES,
+} from "@/lib/analysis-schema";
 
 type Props = {
   form: IntakeFormState;
@@ -44,8 +49,8 @@ const STEPS = [
   },
   {
     id: "metrics",
-    label: "Metrics",
-    hint: "Optional live results",
+    label: "Signals",
+    hint: "Pixel, EMQ, Advantage+ & results",
     Icon: IconChart,
   },
 ] as const;
@@ -88,24 +93,37 @@ export function IntakePanel({
   const [step, setStep] = useState<StepId>("assets");
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
+  const setMode = (mode: AnalysisMode) => onChange({ ...form, mode });
   const setCopy = (key: keyof IntakeFormState["copy"], value: string) =>
     onChange({ ...form, copy: { ...form.copy, [key]: value } });
   const setSetup = (key: keyof IntakeFormState["setup"], value: string) =>
     onChange({ ...form, setup: { ...form.setup, [key]: value } });
   const setMetrics = (key: keyof IntakeFormState["metrics"], value: string) =>
     onChange({ ...form, metrics: { ...form.metrics, [key]: value } });
+  const setSignals = (key: keyof IntakeFormState["signals"], value: string) =>
+    onChange({ ...form, signals: { ...form.signals, [key]: value } });
 
-  const addImages = (images: ClientImage[]) =>
+  const addImages = (images: ClientImage[]) => {
+    const next = [...form.images, ...images].slice(0, MAX_IMAGES);
+    const creatives = next.filter((i) => i.kind === "creative").length;
     onChange({
       ...form,
-      images: [...form.images, ...images].slice(0, 3),
+      images: next,
+      mode: creatives > 1 ? "portfolio" : form.mode,
     });
+  };
 
-  const removeImage = (id: string) =>
+  const removeImage = (id: string) => {
+    const images = form.images.filter((img) => img.id !== id);
+    const creatives = images.filter((i) => i.kind === "creative").length;
     onChange({
       ...form,
-      images: form.images.filter((img) => img.id !== id),
+      images,
+      mode: creatives > 1 ? "portfolio" : form.mode,
     });
+  };
+
+  const creativeCount = form.images.filter((i) => i.kind === "creative").length;
 
   const goNext = () => {
     if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1].id);
@@ -201,25 +219,107 @@ export function IntakePanel({
 
       <div key={step} className="animate-rise space-y-6">
         {step === "assets" ? (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ImageDropzone
-              kind="creative"
-              label="Creative"
-              hint="Ad images or video thumbnails for retrieval & quality scoring"
-              images={form.images}
-              onAdd={addImages}
-              onRemove={removeImage}
-              maxCount={3}
-            />
-            <ImageDropzone
-              kind="screenshot"
-              label="Ads Manager screenshot"
-              hint="Campaign, ad set, or results screens — I'll read the settings"
-              images={form.images}
-              onAdd={addImages}
-              onRemove={removeImage}
-              maxCount={3}
-            />
+          <div className="space-y-6">
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="Analysis mode"
+            >
+              {(
+                [
+                  {
+                    id: "single" as const,
+                    label: "Single ad",
+                    hint: "One concept diagnosis",
+                  },
+                  {
+                    id: "portfolio" as const,
+                    label: "Portfolio",
+                    hint: "Diversity matrix + ticket collapse",
+                  },
+                ] as const
+              ).map((opt) => {
+                const active = form.mode === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setMode(opt.id)}
+                    className={[
+                      "cursor-pointer rounded-xl border px-4 py-3 text-left transition duration-200",
+                      active
+                        ? "border-meta/50 bg-meta/10 shadow-[0_0_24px_rgba(37,99,235,0.12)]"
+                        : "border-ink-700 bg-ink-950/40 hover:border-ink-500",
+                    ].join(" ")}
+                    aria-pressed={active}
+                  >
+                    <span className="block font-display text-sm text-ink-50">
+                      {opt.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-ink-400">
+                      {opt.hint}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {form.mode === "portfolio" ? (
+              <p className="rounded-xl border border-meta/25 bg-meta/5 px-4 py-3 text-sm text-ink-200">
+                Upload up to {MAX_CREATIVE_IMAGES} creatives. I cluster
+                near-duplicates into one retrieval ticket and score Format ×
+                Persona × Environment × Benefit.
+                {creativeCount > 0
+                  ? ` ${creativeCount} creative${creativeCount === 1 ? "" : "s"} attached.`
+                  : ""}
+              </p>
+            ) : null}
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ImageDropzone
+                kind="creative"
+                label="Creative"
+                hint={
+                  form.mode === "portfolio"
+                    ? "Distinct concepts preferred — crops/CTA swaps collapse to one ticket"
+                    : "Ad images or video thumbnails for retrieval & quality scoring"
+                }
+                images={form.images}
+                onAdd={addImages}
+                onRemove={removeImage}
+                maxCount={
+                  form.mode === "portfolio" ? MAX_CREATIVE_IMAGES : 3
+                }
+                maxTotal={MAX_IMAGES}
+              />
+              <ImageDropzone
+                kind="screenshot"
+                label="Ads Manager screenshot"
+                hint="Campaign, ad set, or results screens — I'll read the settings"
+                images={form.images}
+                onAdd={addImages}
+                onRemove={removeImage}
+                maxCount={MAX_SCREENSHOT_IMAGES}
+                maxTotal={MAX_IMAGES}
+              />
+            </div>
+
+            {form.mode === "portfolio" ? (
+              <Field
+                label="Portfolio notes"
+                htmlFor={`${baseId}-portfolio-notes`}
+                hint="Optional: describe each creative (persona, format, benefit) if images alone aren't enough"
+              >
+                <textarea
+                  id={`${baseId}-portfolio-notes`}
+                  rows={4}
+                  className="input-field resize-y"
+                  placeholder={"Ad A: UGC kitchen, sleep benefit…\nAd B: static before/after, athletes…"}
+                  value={form.setup.portfolioNotes}
+                  onChange={(e) => setSetup("portfolioNotes", e.target.value)}
+                />
+              </Field>
+            ) : null}
           </div>
         ) : null}
 
@@ -369,37 +469,137 @@ export function IntakePanel({
         ) : null}
 
         {step === "metrics" ? (
-          <div className="space-y-5">
-            <div className="rounded-xl border border-accent/25 bg-accent/5 px-4 py-3 text-sm text-ink-200">
-              Optional — leave blank and live performance stays{" "}
-              <span className="font-medium text-accent-bright">Unknown</span>.
-              I will not invent ROAS success.
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {(
-                [
-                  ["spend", "Spend"],
-                  ["ctr", "CTR"],
-                  ["cpc", "CPC"],
-                  ["cpa", "CPA / cost per result"],
-                  ["frequency", "Frequency"],
-                  ["learningStatus", "Learning status"],
-                  ["qualityRanking", "Quality rankings"],
-                  ["notes", "Notes"],
-                ] as const
-              ).map(([key, label]) => (
-                <Field key={key} label={label} htmlFor={`${baseId}-${key}`}>
-                  <input
-                    id={`${baseId}-${key}`}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="font-display text-sm tracking-wide text-ink-100 uppercase">
+                Signal hygiene & Advantage+
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Pixel / CAPI" htmlFor={`${baseId}-pixel`}>
+                  <select
+                    id={`${baseId}-pixel`}
                     className="input-field"
-                    value={form.metrics[key]}
-                    onChange={(e) => setMetrics(key, e.target.value)}
-                    placeholder={
-                      key === "notes" ? "Funnel notes, EMQ, Pixel…" : undefined
-                    }
+                    value={form.signals.pixelCapi}
+                    onChange={(e) => setSignals("pixelCapi", e.target.value)}
+                  >
+                    <option value="">Select…</option>
+                    <option value="pixel_capi">Pixel + CAPI</option>
+                    <option value="pixel_only">Pixel only</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="EMQ score"
+                  htmlFor={`${baseId}-emq`}
+                  hint="Event Match Quality 0–10 if known"
+                >
+                  <input
+                    id={`${baseId}-emq`}
+                    className="input-field"
+                    value={form.signals.emq}
+                    onChange={(e) => setSignals("emq", e.target.value)}
+                    placeholder="e.g. 7.2"
                   />
                 </Field>
-              ))}
+                <Field
+                  label="Value optimization"
+                  htmlFor={`${baseId}-value-opt`}
+                >
+                  <select
+                    id={`${baseId}-value-opt`}
+                    className="input-field"
+                    value={form.signals.valueOptimization}
+                    onChange={(e) =>
+                      setSignals("valueOptimization", e.target.value)
+                    }
+                  >
+                    <option value="">Select…</option>
+                    <option value="on">On</option>
+                    <option value="off">Off</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Advantage+ campaign"
+                  htmlFor={`${baseId}-asc`}
+                  hint="Full Advantage+ sales/ASC vs manual"
+                >
+                  <select
+                    id={`${baseId}-asc`}
+                    className="input-field"
+                    value={form.signals.advantagePlusCampaign}
+                    onChange={(e) =>
+                      setSignals("advantagePlusCampaign", e.target.value)
+                    }
+                  >
+                    <option value="">Select…</option>
+                    <option value="yes">Yes — full Advantage+</option>
+                    <option value="partial">Partial (audience/placements)</option>
+                    <option value="no">No — manual cages</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Value rules"
+                  htmlFor={`${baseId}-value-rules`}
+                  hint="New customer / high AOV weights…"
+                >
+                  <input
+                    id={`${baseId}-value-rules`}
+                    className="input-field"
+                    value={form.signals.valueRules}
+                    onChange={(e) => setSignals("valueRules", e.target.value)}
+                    placeholder="e.g. new customers 1.5x"
+                  />
+                </Field>
+                <Field
+                  label="Landing / CX notes"
+                  htmlFor={`${baseId}-cx`}
+                  hint="Checkout friction, shipping, misleading claims…"
+                >
+                  <input
+                    id={`${baseId}-cx`}
+                    className="input-field"
+                    value={form.signals.landingCx}
+                    onChange={(e) => setSignals("landingCx", e.target.value)}
+                    placeholder="Slow checkout, 7-day shipping…"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border border-accent/25 bg-accent/5 px-4 py-3 text-sm text-ink-200">
+                Live metrics optional — leave blank and performance stays{" "}
+                <span className="font-medium text-accent-bright">Unknown</span>.
+                I will not invent ROAS success.
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {(
+                  [
+                    ["spend", "Spend"],
+                    ["ctr", "CTR"],
+                    ["cpc", "CPC"],
+                    ["cpa", "CPA / cost per result"],
+                    ["frequency", "Frequency"],
+                    ["learningStatus", "Learning status"],
+                    ["qualityRanking", "Quality rankings"],
+                    ["notes", "Notes"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Field key={key} label={label} htmlFor={`${baseId}-${key}`}>
+                    <input
+                      id={`${baseId}-${key}`}
+                      className="input-field"
+                      value={form.metrics[key]}
+                      onChange={(e) => setMetrics(key, e.target.value)}
+                      placeholder={
+                        key === "notes" ? "Funnel notes…" : undefined
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}

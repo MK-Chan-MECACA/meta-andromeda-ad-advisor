@@ -6,10 +6,9 @@ import { MetaImportPanel } from "@/components/MetaImportPanel";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { IconLoader, IconSpark } from "@/components/Icons";
 import type { AnalysisResult } from "@/lib/analysis-schema";
+import { useIntakeDraft } from "@/lib/use-intake-draft";
 import {
-  emptyIntakeForm,
   type AnalyzeResponse,
-  type IntakeFormState,
 } from "@/lib/types";
 
 function AnalyzingState() {
@@ -29,7 +28,8 @@ function AnalyzingState() {
               Analyzing
             </p>
             <p className="mt-1 text-sm text-ink-200">
-              Reading your assets through retrieval → ranking → learning…
+              Reading your assets through eligibility → Retrieval MoE → ranking
+              → learning…
             </p>
           </div>
           <div className="space-y-2">
@@ -48,7 +48,7 @@ function AnalyzingState() {
 }
 
 export default function Home() {
-  const [form, setForm] = useState<IntakeFormState>(emptyIntakeForm);
+  const { form, setForm, savedAt, imagesOmitted, clearDraft } = useIntakeDraft();
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +63,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode: form.mode,
           images: form.images.map(({ dataUrl, kind, name }) => ({
             dataUrl,
             kind,
@@ -71,6 +72,7 @@ export default function Home() {
           copy: form.copy,
           setup: form.setup,
           metrics: form.metrics,
+          signals: form.signals,
         }),
       });
 
@@ -101,6 +103,19 @@ export default function Home() {
     }
   }
 
+  function handleClearDraft() {
+    clearDraft();
+    setAnalysis(null);
+    setError(null);
+  }
+
+  const draftLabel = savedAt
+    ? `Draft saved ${new Date(savedAt).toLocaleString(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+      })}${imagesOmitted ? " · images not stored (quota)" : ""}`
+    : null;
+
   return (
     <div className="relative flex-1 overflow-x-hidden">
       <div
@@ -119,17 +134,29 @@ export default function Home() {
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-meta/30 bg-meta/10 px-3 py-1.5 text-xs text-meta-bright">
             <IconSpark className="h-3.5 w-3.5" aria-hidden />
             <span className="font-display tracking-[0.18em] uppercase">
-              Meta retrieval gatekeeper
+              Retrieval MoE gatekeeper
             </span>
           </div>
           <h1 className="font-display text-5xl leading-[0.95] tracking-tight text-ink-50 sm:text-7xl">
             ANDROMEDA
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-300 sm:text-lg">
-            Upload creative, paste copy, or drop an Ads Manager screenshot — I
-            score retrieval, auction fit, and learning so you can maximize
-            conversion.
+            I score every eligible ad. Upload creative, paste copy, or drop an
+            Ads Manager screenshot — I diagnose MoE retrieval, expert coverage,
+            auction fit, and learning so you can maximize conversion.
           </p>
+          {draftLabel ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-400">
+              <span>{draftLabel} (local)</span>
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="cursor-pointer text-meta-bright underline-offset-2 hover:underline"
+              >
+                Clear draft
+              </button>
+            </div>
+          ) : null}
         </header>
 
         <div className="animate-rise-delay mb-6">

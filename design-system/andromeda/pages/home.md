@@ -3,12 +3,15 @@
 > Overrides `MASTER.md` for the Andromeda single-page advisor.
 
 ## Intent
-Diagnostic tool UI — not a marketing landing page. Prioritize clarity, progressive disclosure, and dark cinema atmosphere.
+Diagnostic tool UI — not a marketing landing page. Prioritize clarity, progressive disclosure, and dark cinema atmosphere. Voice: 2026 Retrieval MoE gatekeeper (“I score every eligible ad”).
 
 ## Layout
-- Compact hero: brand chip + ANDROMEDA + one supporting line
-- Glass intake shell with 4-step wizard (Assets → Copy → Setup → Metrics)
-- Results appear below after analyze; auto-scroll to verdict
+- Compact hero: brand chip + ANDROMEDA + one supporting line (MoE / eligible-ad framing)
+- Mode toggle on Assets: Single ad | Portfolio (diversity matrix)
+- Glass intake shell with 4-step wizard (Assets → Copy → Setup → Signals)
+- Signals step: Pixel/CAPI, EMQ, value opt, Advantage+, CX + optional live metrics
+- localStorage draft banner under hero; results export (copy / .md)
+- Results: pipeline strip, diversity matrix, signals panel, 2026 cards, sources
 
 ## Color (dark primary)
 | Role | Hex |

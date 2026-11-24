@@ -10,15 +10,112 @@ import {
   ANDROMEDA_SYSTEM_PROMPT,
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
+import {
+  clientIp,
+  releaseInFlight,
+  takeRateLimitToken,
+  tryAcquireInFlight,
+} from "@/lib/rate-limit";
 
 export const maxDuration = 120;
+
+/** Cap aggregate decoded image bytes even when per-image limits are fine. */
+const MAX_TOTAL_IMAGE_BYTES = 16 * 1024 * 1024;
+
+const RATE_LIMIT = Number(process.env.ANALYZE_RATE_LIMIT_PER_MIN ?? "5");
+const RATE_WINDOW_MS = 60_000;
+const MAX_IN_FLIGHT = Number(process.env.ANALYZE_MAX_IN_FLIGHT ?? "2");
 
 function estimateDataUrlBytes(dataUrl: string): number {
   const base64 = dataUrl.split(",")[1] ?? "";
   return Math.floor((base64.length * 3) / 4);
 }
 
+function allowedExtraOrigins(): string[] {
+  return (process.env.ANALYZE_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function originAllowed(req: Request): boolean {
+  const allowNonBrowser = process.env.ANALYZE_ALLOW_MISSING_ORIGIN === "1";
+  const origin = req.headers.get("origin");
+  const fetchSite = (req.headers.get("sec-fetch-site") ?? "").toLowerCase();
+
+  // Browser fetch always sends Origin + Sec-Fetch-Site. Missing either means
+  // a non-browser client — do not trust a forged Origin alone.
+  if (!origin || !fetchSite) {
+    return allowNonBrowser;
+  }
+
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(req.url).origin;
+  } catch {
+    return false;
+  }
+
+  const extras = allowedExtraOrigins();
+
+  if (fetchSite === "same-origin" || fetchSite === "same-site") {
+    return origin === requestOrigin || extras.includes(origin);
+  }
+
+  // Listed preview/custom hosts are intentionally cross-site.
+  if (fetchSite === "cross-site") {
+    return extras.includes(origin);
+  }
+
+  if (fetchSite === "none") {
+    return origin === requestOrigin;
+  }
+
+  return false;
+}
+
 export async function POST(req: Request) {
+  if (!originAllowed(req)) {
+    return NextResponse.json({ error: "Forbidden origin." }, { status: 403 });
+  }
+
+  const ip = clientIp(req);
+
+  // Acquire concurrency first so a full slot does not burn per-IP quota.
+  const slot = tryAcquireInFlight(MAX_IN_FLIGHT);
+  if (!slot.ok) {
+    return NextResponse.json(
+      { error: "Analyze is busy. Retry in a few seconds." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(slot.retryAfterSec) },
+      },
+    );
+  }
+
+  const limit = Number.isFinite(RATE_LIMIT) && RATE_LIMIT > 0 ? RATE_LIMIT : 5;
+  const token = takeRateLimitToken(`analyze:${ip}`, limit, RATE_WINDOW_MS);
+  if (!token.ok) {
+    releaseInFlight();
+    return NextResponse.json(
+      {
+        error: "Too many analyses from this IP. Try again shortly.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(token.retryAfterSec) },
+      },
+    );
+  }
+
+  try {
+    return await runAnalyze(req, ip, token.remaining);
+  } finally {
+    releaseInFlight();
+  }
+}
+
+async function runAnalyze(req: Request, ip: string, remaining: number) {
   let body: unknown;
   try {
     body = await req.json();
@@ -49,6 +146,7 @@ export async function POST(req: Request) {
     );
   }
 
+  let totalImageBytes = 0;
   for (const image of data.images) {
     const bytes = estimateDataUrlBytes(image.dataUrl);
     if (bytes > MAX_IMAGE_BYTES) {
@@ -59,6 +157,16 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    totalImageBytes += bytes;
+  }
+
+  if (totalImageBytes > MAX_TOTAL_IMAGE_BYTES) {
+    return NextResponse.json(
+      {
+        error: `Total image payload exceeds ${MAX_TOTAL_IMAGE_BYTES / (1024 * 1024)}MB. Remove some creatives.`,
+      },
+      { status: 400 },
+    );
   }
 
   if (!process.env.XAI_API_KEY) {
@@ -71,16 +179,24 @@ export async function POST(req: Request) {
     );
   }
 
+  console.info(
+    `[analyze] ip=${ip} images=${data.images.length} bytes=${totalImageBytes} mode=${data.mode} remaining=${remaining}`,
+  );
+
+  const creatives = data.images.filter((img) => img.kind === "creative");
   const imageLabels = data.images.map(
     (img, i) =>
       `${img.kind === "screenshot" ? "Ads Manager screenshot" : "Creative"} ${i + 1}${img.name ? ` (${img.name})` : ""}`,
   );
 
   const userText = buildUserAnalysisPrompt({
+    mode: data.mode,
     copy: data.copy,
     setup: data.setup,
     metrics: data.metrics,
+    signals: data.signals,
     imageLabels,
+    creativeCount: creatives.length,
   });
 
   const content: Array<

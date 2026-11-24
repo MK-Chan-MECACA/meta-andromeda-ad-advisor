@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const letterGradeSchema = z.enum(["A", "B", "C", "D", "F"]);
 
+export const stageGradeSchema = z.enum(["PASS", "WEAK", "FAIL"]);
+
 export const analysisResultSchema = z.object({
   verdict: z.enum(["PASS", "AT_RISK", "FAIL", "UNKNOWN"]),
   bottomLine: z
@@ -10,6 +12,11 @@ export const analysisResultSchema = z.object({
   eligibility: z.object({
     summary: z.string(),
     blockers: z.array(z.string()),
+    eligibilityBreadth: z
+      .string()
+      .describe(
+        "How hard targeting cages prune the people Andromeda may score; every eligible ad is scored",
+      ),
   }),
   retrieval: z.object({
     semanticNode: z
@@ -21,9 +28,25 @@ export const analysisResultSchema = z.object({
       .min(0)
       .describe("Count of true distinct concepts / retrieval tickets"),
     ticketRationale: z.string(),
+    expertCoverage: z
+      .string()
+      .describe(
+        "Which MoE user-expert pathways (personas/intents) this creative could activate",
+      ),
+    semanticClarity: z.object({
+      grade: stageGradeSchema.describe(
+        "GenRecs-readability of text + image semantics",
+      ),
+      note: z.string(),
+    }),
+    coldStartReadiness: z
+      .string()
+      .describe(
+        "How well a new ad/product can ramp via semantic clarity vs clone/fatigue risk",
+      ),
     cageCheck: z.string(),
     congruence: z.string(),
-    grade: z.enum(["PASS", "WEAK", "FAIL"]),
+    grade: stageGradeSchema,
   }),
   ranking: z.object({
     earFit: z.string(),
@@ -53,7 +76,9 @@ export const analysisResultSchema = z.object({
     .array(z.string())
     .min(1)
     .max(6)
-    .describe("Concrete strengths that help retrieval, EAR, quality, or learning"),
+    .describe(
+      "Concrete strengths that help tickets, experts, semantic clarity, EAR, quality, or learning",
+    ),
   whatWentWrong: z
     .array(z.string())
     .min(1)
@@ -67,18 +92,112 @@ export const analysisResultSchema = z.object({
         why: z
           .string()
           .describe(
-            "Must explain impact on retrieval tickets, EAR, ad quality, or learning density",
+            "Must explain impact on eligibility, tickets, expert coverage, semantic clarity, EAR, quality, or learning",
           ),
       }),
     )
     .min(1)
     .max(8),
+  portfolio: z.object({
+    mode: z
+      .enum(["single", "portfolio"])
+      .describe("single when one concept; portfolio when multiple creatives analyzed"),
+    trueTicketCount: z
+      .number()
+      .int()
+      .min(0)
+      .describe("Distinct retrieval tickets after collapsing near-duplicates"),
+    summary: z
+      .string()
+      .describe("Operator-facing ticket map: what collapses vs what stands alone"),
+    diversityMatrix: z.object({
+      format: z
+        .string()
+        .describe("Formats present / missing (static, UGC, Reels, carousel…)"),
+      persona: z
+        .string()
+        .describe("Personas / audiences spoken to"),
+      environment: z
+        .string()
+        .describe("Settings / contexts shown"),
+      benefit: z
+        .string()
+        .describe("Distinct benefits / offers / angles"),
+      grade: letterGradeSchema.describe(
+        "True diversification grade across Format × Persona × Environment × Benefit",
+      ),
+    }),
+    clusters: z
+      .array(
+        z.object({
+          label: z.string().describe("Cluster / concept name"),
+          members: z
+            .array(z.string())
+            .min(1)
+            .max(12)
+            .describe("Creative names or labels in this cluster"),
+          isDistinctTicket: z
+            .boolean()
+            .describe("true if this cluster earns its own retrieval ticket"),
+          note: z.string(),
+        }),
+      )
+      .min(1)
+      .max(12),
+    collapsedDuplicates: z
+      .array(z.string())
+      .max(12)
+      .describe(
+        "Near-duplicate pairs/groups that collapse to one ticket; empty if none",
+      ),
+  }),
+  signals: z.object({
+    advantagePlus: z.object({
+      grade: letterGradeSchema.describe(
+        "How fully Advantage+ / broad automation is adopted vs manual cages",
+      ),
+      note: z.string(),
+    }),
+    signalHygiene: z.object({
+      grade: letterGradeSchema.describe(
+        "Pixel + CAPI + EMQ readiness for EAR training",
+      ),
+      note: z.string(),
+    }),
+    valueOptFit: z
+      .string()
+      .describe(
+        "Whether value optimization / value rules match the business outcome",
+      ),
+    cxRisk: z
+      .string()
+      .describe(
+        "Post-click / landing / fulfillment CX risks that hit Ad Quality",
+      ),
+    checklist: z
+      .array(
+        z.object({
+          item: z.string(),
+          status: z.enum(["pass", "warn", "fail", "unknown"]),
+          note: z.string(),
+        }),
+      )
+      .min(3)
+      .max(10)
+      .describe(
+        "Operator checklist covering Advantage+, Pixel/CAPI, EMQ, value opt, CX",
+      ),
+  }),
   missingInputs: z
     .array(z.string())
     .describe("What would sharpen the diagnosis; empty if nothing missing"),
 });
 
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
+
+export const MAX_IMAGES = 12;
+export const MAX_CREATIVE_IMAGES = 8;
+export const MAX_SCREENSHOT_IMAGES = 3;
 
 const imageInputSchema = z.object({
   dataUrl: z.string().regex(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i),
@@ -114,6 +233,12 @@ const setupSchema = z
     placements: z.string().max(300).optional().default(""),
     adsInAdSet: z.string().max(50).optional().default(""),
     campaignType: z.string().max(200).optional().default(""),
+    portfolioNotes: z
+      .string()
+      .max(4000)
+      .optional()
+      .default("")
+      .describe("Optional per-creative descriptions when analyzing a portfolio"),
   })
   .default({
     objective: "",
@@ -125,6 +250,7 @@ const setupSchema = z
     placements: "",
     adsInAdSet: "",
     campaignType: "",
+    portfolioNotes: "",
   });
 
 const metricsSchema = z
@@ -149,11 +275,40 @@ const metricsSchema = z
     notes: "",
   });
 
+const signalsSchema = z
+  .object({
+    pixelCapi: z
+      .enum(["pixel_only", "pixel_capi", "unknown", ""])
+      .optional()
+      .default(""),
+    emq: z.string().max(50).optional().default(""),
+    valueOptimization: z
+      .enum(["on", "off", "unknown", ""])
+      .optional()
+      .default(""),
+    valueRules: z.string().max(1000).optional().default(""),
+    landingCx: z.string().max(2000).optional().default(""),
+    advantagePlusCampaign: z
+      .enum(["yes", "partial", "no", "unknown", ""])
+      .optional()
+      .default(""),
+  })
+  .default({
+    pixelCapi: "",
+    emq: "",
+    valueOptimization: "",
+    valueRules: "",
+    landingCx: "",
+    advantagePlusCampaign: "",
+  });
+
 export const analyzeRequestSchema = z.object({
-  images: z.array(imageInputSchema).max(3).default([]),
+  mode: z.enum(["single", "portfolio"]).default("single"),
+  images: z.array(imageInputSchema).max(MAX_IMAGES).default([]),
   copy: copySchema,
   setup: setupSchema,
   metrics: metricsSchema,
+  signals: signalsSchema,
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;

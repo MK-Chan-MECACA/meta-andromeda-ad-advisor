@@ -12,7 +12,10 @@ type Props = {
   images: ClientImage[];
   onAdd: (images: ClientImage[]) => void;
   onRemove: (id: string) => void;
+  /** Max images of this kind. */
   maxCount: number;
+  /** Optional hard cap across all kinds (defaults to maxCount). */
+  maxTotal?: number;
 };
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -32,13 +35,18 @@ export function ImageDropzone({
   onAdd,
   onRemove,
   maxCount,
+  maxTotal,
 }: Props) {
   const inputId = useId();
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const ofKind = images.filter((img) => img.kind === kind);
-  const remaining = maxCount - images.length;
+  const totalCap = maxTotal ?? maxCount;
+  const remaining = Math.min(
+    maxCount - ofKind.length,
+    totalCap - images.length,
+  );
   const Icon = kind === "creative" ? IconImage : IconMonitor;
 
   const ingestFiles = useCallback(
@@ -52,7 +60,9 @@ export function ImageDropzone({
         return;
       }
       if (remaining <= 0) {
-        setError("Maximum 3 images total.");
+        setError(
+          `Limit reached (${maxCount} ${kind === "creative" ? "creatives" : "screenshots"} / ${totalCap} total).`,
+        );
         return;
       }
 
@@ -72,7 +82,7 @@ export function ImageDropzone({
       }
       if (accepted.length) onAdd(accepted);
     },
-    [kind, onAdd, remaining],
+    [kind, maxCount, onAdd, remaining, totalCap],
   );
 
   return (

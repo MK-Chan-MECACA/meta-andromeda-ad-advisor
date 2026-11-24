@@ -4,6 +4,19 @@ Single-session dashboard that diagnoses Meta/Facebook/Instagram ads the way **An
 
 Powered by **xAI Grok** (`grok-4.5`) via the Vercel AI SDK.
 
+## Roadmap (2026 rebuild)
+
+Meta’s Oct 2026 Andromeda update (Retrieval MoE, fused GPU pipeline, GenRecs semantic retrieval, GEM central model) changes how this advisor should reason. See **[docs/ANDROMEDA-2026-REBUILD-PLAN.md](docs/ANDROMEDA-2026-REBUILD-PLAN.md)** for research notes, gap analysis, and phased build plan.
+
+### Analyze API abuse controls
+
+`POST /api/analyze` is public but gated:
+
+- Per-IP rate limit (default **5 / minute**, override with `ANALYZE_RATE_LIMIT_PER_MIN`)
+- Same-origin check; extra hosts via `ANALYZE_ALLOWED_ORIGINS` (comma-separated)
+- Per-image 4MB + **16MB** total decoded image payload cap
+- Request logging: IP, image count, bytes, mode
+
 ## Setup
 
 ```bash

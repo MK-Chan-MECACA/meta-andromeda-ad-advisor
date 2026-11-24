@@ -9,7 +9,10 @@ export type ClientImage = {
   dataUrl: string;
 };
 
+export type AnalysisMode = "single" | "portfolio";
+
 export type IntakeFormState = {
+  mode: AnalysisMode;
   images: ClientImage[];
   copy: {
     primaryText: string;
@@ -27,6 +30,7 @@ export type IntakeFormState = {
     placements: string;
     adsInAdSet: string;
     campaignType: string;
+    portfolioNotes: string;
   };
   metrics: {
     spend: string;
@@ -38,9 +42,18 @@ export type IntakeFormState = {
     qualityRanking: string;
     notes: string;
   };
+  signals: {
+    pixelCapi: string;
+    emq: string;
+    valueOptimization: string;
+    valueRules: string;
+    landingCx: string;
+    advantagePlusCampaign: string;
+  };
 };
 
 export const emptyIntakeForm = (): IntakeFormState => ({
+  mode: "single",
   images: [],
   copy: {
     primaryText: "",
@@ -58,6 +71,7 @@ export const emptyIntakeForm = (): IntakeFormState => ({
     placements: "",
     adsInAdSet: "",
     campaignType: "",
+    portfolioNotes: "",
   },
   metrics: {
     spend: "",
@@ -68,6 +82,14 @@ export const emptyIntakeForm = (): IntakeFormState => ({
     learningStatus: "",
     qualityRanking: "",
     notes: "",
+  },
+  signals: {
+    pixelCapi: "",
+    emq: "",
+    valueOptimization: "",
+    valueRules: "",
+    landingCx: "",
+    advantagePlusCampaign: "",
   },
 });
 
