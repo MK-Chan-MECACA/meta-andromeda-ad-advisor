@@ -10,15 +10,61 @@ import {
   ANDROMEDA_SYSTEM_PROMPT,
   buildUserAnalysisPrompt,
 } from "@/lib/andromeda-prompt";
+import { clientIp, takeRateLimitToken } from "@/lib/rate-limit";
 
 export const maxDuration = 120;
+
+/** Cap aggregate decoded image bytes even when per-image limits are fine. */
+const MAX_TOTAL_IMAGE_BYTES = 16 * 1024 * 1024;
+
+const RATE_LIMIT = Number(process.env.ANALYZE_RATE_LIMIT_PER_MIN ?? "5");
+const RATE_WINDOW_MS = 60_000;
 
 function estimateDataUrlBytes(dataUrl: string): number {
   const base64 = dataUrl.split(",")[1] ?? "";
   return Math.floor((base64.length * 3) / 4);
 }
 
+function originAllowed(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // non-browser clients still hit rate limits
+
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(req.url).origin;
+  } catch {
+    return false;
+  }
+
+  if (origin === requestOrigin) return true;
+
+  const extras = (process.env.ANALYZE_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return extras.includes(origin);
+}
+
 export async function POST(req: Request) {
+  if (!originAllowed(req)) {
+    return NextResponse.json({ error: "Forbidden origin." }, { status: 403 });
+  }
+
+  const ip = clientIp(req);
+  const limit = Number.isFinite(RATE_LIMIT) && RATE_LIMIT > 0 ? RATE_LIMIT : 5;
+  const token = takeRateLimitToken(`analyze:${ip}`, limit, RATE_WINDOW_MS);
+  if (!token.ok) {
+    return NextResponse.json(
+      {
+        error: "Too many analyses from this IP. Try again shortly.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(token.retryAfterSec) },
+      },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -49,6 +95,7 @@ export async function POST(req: Request) {
     );
   }
 
+  let totalImageBytes = 0;
   for (const image of data.images) {
     const bytes = estimateDataUrlBytes(image.dataUrl);
     if (bytes > MAX_IMAGE_BYTES) {
@@ -59,6 +106,16 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    totalImageBytes += bytes;
+  }
+
+  if (totalImageBytes > MAX_TOTAL_IMAGE_BYTES) {
+    return NextResponse.json(
+      {
+        error: `Total image payload exceeds ${MAX_TOTAL_IMAGE_BYTES / (1024 * 1024)}MB. Remove some creatives.`,
+      },
+      { status: 400 },
+    );
   }
 
   if (!process.env.XAI_API_KEY) {
@@ -70,6 +127,10 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+
+  console.info(
+    `[analyze] ip=${ip} images=${data.images.length} bytes=${totalImageBytes} mode=${data.mode} remaining=${token.remaining}`,
+  );
 
   const creatives = data.images.filter((img) => img.kind === "creative");
   const imageLabels = data.images.map(

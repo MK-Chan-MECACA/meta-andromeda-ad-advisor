@@ -1,6 +1,6 @@
 # Andromeda Advisor — 2026 Rebuild Plan
 
-**Status:** Phases A–C shipping on this branch (signals / Advantage+ / export / drafts)  
+**Status:** Phases A–D shipping on this branch (incl. analyze rate-limit / payload guards)  
 **Branch:** `cursor/andromeda-2026-rebuild-plan-de98`  
 **Primary sources dated:** 13–28 Oct 2026 (Asia/Kuala_Lumpur)
 
@@ -209,10 +209,10 @@ Hero budget: brand + one line + CTA into intake — no marketing stat spam using
 - Value opt / EMQ / CX checklist; Advantage+ adoption + signal hygiene grades.
 - Markdown export / copy; localStorage intake draft persistence.
 
-### Phase D — Hardening
+### Phase D — Hardening ✅ (partial on this branch)
 
-- App Review prep, rate limits, abuse controls, observability on `/api/analyze`.
-- Optional auth if multi-device history is required.
+- `/api/analyze`: per-IP rate limit (default 5/min), same-origin gate + `ANALYZE_ALLOWED_ORIGINS`, 16MB total image cap, request logging.
+- Remaining: stronger distributed rate limit (KV), App Review path, optional auth for multi-device history.
 
 ---
 
