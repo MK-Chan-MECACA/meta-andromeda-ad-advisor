@@ -172,7 +172,7 @@ export async function exchangeCode(req: Request, code: string) {
 export type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export const AD_LIST_FIELDS =
-  "id,name,effective_status,updated_time,creative{thumbnail_url},adset{name},campaign{name,objective}";
+  "id,name,effective_status,updated_time,creative{thumbnail_url},adset{id,name},campaign{id,name,objective}";
 
 export const AD_DETAIL_FIELDS =
   "id,name,effective_status," +

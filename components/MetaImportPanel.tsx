@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ClientImage, IntakeFormState } from "@/lib/types";
-import { MAX_CREATIVE_IMAGES } from "@/lib/analysis-schema";
+import {
+  MAX_CREATIVE_IMAGES,
+  MAX_SCREENSHOT_IMAGES,
+} from "@/lib/analysis-schema";
 
 type AdAccount = {
   id: string;
@@ -16,9 +19,23 @@ type AdRow = {
   name: string;
   effective_status: string;
   creative?: { thumbnail_url?: string };
-  adset?: { name?: string };
-  campaign?: { name?: string; objective?: string };
+  adset?: { id?: string; name?: string };
+  campaign?: { id?: string; name?: string; objective?: string };
 };
+
+/** Screenshots capped; creatives replaced by imports (never exceed creative cap). */
+function composeImages(
+  existing: ClientImage[],
+  importedCreatives: ClientImage[],
+): ClientImage[] {
+  const screenshots = existing
+    .filter((i) => i.kind === "screenshot")
+    .slice(0, MAX_SCREENSHOT_IMAGES);
+  const creatives = importedCreatives
+    .filter((i) => i.kind === "creative" && i.dataUrl)
+    .slice(0, MAX_CREATIVE_IMAGES);
+  return [...screenshots, ...creatives];
+}
 
 type ImportResponse = Omit<IntakeFormState, "images"> & {
   image: string | null;
@@ -118,14 +135,23 @@ export function MetaImportPanel({
   const loadingAccounts = connected === true && !accounts.length && !error;
 
   const adsByAdSet = useMemo(() => {
-    const map = new Map<string, AdRow[]>();
+    const map = new Map<
+      string,
+      { id: string; label: string; ads: AdRow[] }
+    >();
     for (const ad of ads) {
-      const key = ad.adset?.name || "Ungrouped";
-      const list = map.get(key) ?? [];
-      list.push(ad);
-      map.set(key, list);
+      const id = ad.adset?.id || `ungrouped-${ad.campaign?.id ?? "none"}`;
+      const label = [
+        ad.adset?.name || "Ungrouped",
+        ad.campaign?.name ? `· ${ad.campaign.name}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const entry = map.get(id) ?? { id, label, ads: [] };
+      entry.ads.push(ad);
+      map.set(id, entry);
     }
-    return [...map.entries()];
+    return [...map.values()];
   }, [ads]);
 
   async function loadAds(id: string) {
@@ -159,8 +185,8 @@ export function MetaImportPanel({
     });
   }
 
-  function selectAdSet(adsetName: string) {
-    const ids = (adsByAdSet.find(([name]) => name === adsetName)?.[1] ?? []).map(
+  function selectAdSet(adsetId: string) {
+    const ids = (adsByAdSet.find((g) => g.id === adsetId)?.ads ?? []).map(
       (a) => a.id,
     );
     setSelected((prev) => {
@@ -192,7 +218,7 @@ export function MetaImportPanel({
         return;
       }
 
-      const image: ClientImage[] = data.image
+      const imported: ClientImage[] = data.image
         ? [
             {
               id: `meta-${ad.id}`,
@@ -205,10 +231,7 @@ export function MetaImportPanel({
 
       onChange({
         mode: "single",
-        images: [
-          ...form.images.filter((i) => !i.id.startsWith("meta-")),
-          ...image,
-        ].slice(0, MAX_CREATIVE_IMAGES + 3),
+        images: composeImages(form.images, imported),
         copy: data.copy,
         setup: { ...data.setup, portfolioNotes: data.setup.portfolioNotes ?? "" },
         metrics: data.metrics,
@@ -275,13 +298,9 @@ export function MetaImportPanel({
         })
         .join("\n");
 
-      const keptScreenshots = form.images.filter(
-        (i) => i.kind === "screenshot",
-      );
-
       onChange({
         mode: results.length > 1 ? "portfolio" : "single",
-        images: [...keptScreenshots, ...images].slice(0, MAX_CREATIVE_IMAGES + 3),
+        images: composeImages(form.images, images),
         copy: primary.copy,
         setup: {
           ...primary.setup,
@@ -393,23 +412,23 @@ export function MetaImportPanel({
               </div>
 
               <div className="max-h-96 space-y-4 overflow-y-auto border border-ink-800 p-3">
-                {adsByAdSet.map(([adsetName, group]) => (
-                  <div key={adsetName} className="space-y-2">
+                {adsByAdSet.map((group) => (
+                  <div key={group.id} className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-display text-[11px] tracking-wide text-ink-400 uppercase">
-                        Ad set · {adsetName}
+                        Ad set · {group.label}
                       </p>
                       <button
                         type="button"
                         className={btn}
                         disabled={busy !== null}
-                        onClick={() => selectAdSet(adsetName)}
+                        onClick={() => selectAdSet(group.id)}
                       >
                         Select ad set
                       </button>
                     </div>
                     <ul className="divide-y divide-ink-800 border border-ink-800">
-                      {group.map((ad) => (
+                      {group.ads.map((ad) => (
                         <li
                           key={ad.id}
                           className="flex items-center gap-3 px-3 py-2.5 text-sm"
