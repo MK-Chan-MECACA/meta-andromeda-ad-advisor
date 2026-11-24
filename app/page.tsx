@@ -29,7 +29,8 @@ function AnalyzingState() {
               Analyzing
             </p>
             <p className="mt-1 text-sm text-ink-200">
-              Reading your assets through retrieval → ranking → learning…
+              Reading your assets through eligibility → Retrieval MoE → ranking
+              → learning…
             </p>
           </div>
           <div className="space-y-2">
@@ -119,16 +120,16 @@ export default function Home() {
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-meta/30 bg-meta/10 px-3 py-1.5 text-xs text-meta-bright">
             <IconSpark className="h-3.5 w-3.5" aria-hidden />
             <span className="font-display tracking-[0.18em] uppercase">
-              Meta retrieval gatekeeper
+              Retrieval MoE gatekeeper
             </span>
           </div>
           <h1 className="font-display text-5xl leading-[0.95] tracking-tight text-ink-50 sm:text-7xl">
             ANDROMEDA
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-300 sm:text-lg">
-            Upload creative, paste copy, or drop an Ads Manager screenshot — I
-            score retrieval, auction fit, and learning so you can maximize
-            conversion.
+            I score every eligible ad. Upload creative, paste copy, or drop an
+            Ads Manager screenshot — I diagnose MoE retrieval, expert coverage,
+            auction fit, and learning so you can maximize conversion.
           </p>
         </header>
 

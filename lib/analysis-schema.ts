@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const letterGradeSchema = z.enum(["A", "B", "C", "D", "F"]);
 
+export const stageGradeSchema = z.enum(["PASS", "WEAK", "FAIL"]);
+
 export const analysisResultSchema = z.object({
   verdict: z.enum(["PASS", "AT_RISK", "FAIL", "UNKNOWN"]),
   bottomLine: z
@@ -10,6 +12,11 @@ export const analysisResultSchema = z.object({
   eligibility: z.object({
     summary: z.string(),
     blockers: z.array(z.string()),
+    eligibilityBreadth: z
+      .string()
+      .describe(
+        "How hard targeting cages prune the people Andromeda may score; every eligible ad is scored",
+      ),
   }),
   retrieval: z.object({
     semanticNode: z
@@ -21,9 +28,25 @@ export const analysisResultSchema = z.object({
       .min(0)
       .describe("Count of true distinct concepts / retrieval tickets"),
     ticketRationale: z.string(),
+    expertCoverage: z
+      .string()
+      .describe(
+        "Which MoE user-expert pathways (personas/intents) this creative could activate",
+      ),
+    semanticClarity: z.object({
+      grade: stageGradeSchema.describe(
+        "GenRecs-readability of text + image semantics",
+      ),
+      note: z.string(),
+    }),
+    coldStartReadiness: z
+      .string()
+      .describe(
+        "How well a new ad/product can ramp via semantic clarity vs clone/fatigue risk",
+      ),
     cageCheck: z.string(),
     congruence: z.string(),
-    grade: z.enum(["PASS", "WEAK", "FAIL"]),
+    grade: stageGradeSchema,
   }),
   ranking: z.object({
     earFit: z.string(),
@@ -53,7 +76,9 @@ export const analysisResultSchema = z.object({
     .array(z.string())
     .min(1)
     .max(6)
-    .describe("Concrete strengths that help retrieval, EAR, quality, or learning"),
+    .describe(
+      "Concrete strengths that help tickets, experts, semantic clarity, EAR, quality, or learning",
+    ),
   whatWentWrong: z
     .array(z.string())
     .min(1)
@@ -67,7 +92,7 @@ export const analysisResultSchema = z.object({
         why: z
           .string()
           .describe(
-            "Must explain impact on retrieval tickets, EAR, ad quality, or learning density",
+            "Must explain impact on eligibility, tickets, expert coverage, semantic clarity, EAR, quality, or learning",
           ),
       }),
     )

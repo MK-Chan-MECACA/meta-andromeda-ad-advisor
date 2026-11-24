@@ -1,10 +1,10 @@
 # Andromeda Advisor — 2026 Rebuild Plan
 
-**Status:** Planning (research complete)  
+**Status:** Phase A in progress (knowledge cutover shipping on this branch)  
 **Branch:** `cursor/andromeda-2026-rebuild-plan-de98`  
 **Primary sources dated:** 13–28 Oct 2026 (Asia/Kuala_Lumpur)
 
-This plan updates the product around Meta’s **next-gen Andromeda** (Retrieval MoE + fused GPU pipeline) and the companion Oct 2026 ads AI stack (GEM, GenRecs, Lattice). It is a build blueprint, not an implementation PR.
+This plan updates the product around Meta’s **next-gen Andromeda** (Retrieval MoE + fused GPU pipeline) and the companion Oct 2026 ads AI stack (GEM, GenRecs, Lattice). Phase A implements mechanics/skill/prompt/schema/UI cutover; later phases remain blueprint.
 
 ---
 
@@ -193,11 +193,11 @@ Hero budget: brand + one line + CTA into intake — no marketing stat spam using
 
 ## 7. Delivery phases
 
-### Phase A — Knowledge cutover (smallest PR after this plan)
+### Phase A — Knowledge cutover ✅ (this branch)
 
 - Rewrite mechanics + skill + prompt + schema fields (single-ad still).
-- UI: show new stage labels + semantic/cold-start cards.
-- Eval: 3–5 golden cases updated.
+- UI: pipeline strip + semantic/cold-start/expert/eligibility cards + sources.
+- Eval: 5 golden cases (incl. cold-start + no-toggle myths).
 
 ### Phase B — Portfolio diversity
 

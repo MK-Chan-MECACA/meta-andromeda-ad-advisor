@@ -4,13 +4,15 @@
     {
       "id": 1,
       "prompt": "You are reviewing my Meta ad. Be Andromeda and tell me if it will work.\n\nCreative: Static 1:1 ad. Left side text \"WHAT IF YOU COULD AUTOMATE 80% OF YOUR WORK?\" and benefit checklist (15+ AI workflows, free AI credits, 3 months support, 46 cohorts, 15,000+ professionals). Right side photo of Dr. Lau Cher Han with HRD Corp claimable badges. CTA button \"Enquiry Now\".\n\nPrimary text: Explains AI Agentic Automation Certification — 2 practical days with n8n, beginner-friendly, no coding, bring laptop and one annoying office task. 100% HRDC claimable for eligible Malaysian companies. Date 4–5 August 2026, 9AM–5PM, AI365 Hub Oval Damansara. Tap WhatsApp for outline and HRDC eligibility. Same 6 benefit bullets.\n\nHeadline: Build AI Automations Without Coding\nDescriptions: Beginner-friendly • Hands-on • HRDC claimable\n\nSetup: Facebook Page LEAD, Instagram theleadio. Conversion location Messaging apps, performance goal Maximize number of conversations, WhatsApp only. Advantage+ placements. Daily budget RM300. Audience: Malaysia, age 25–65+, All genders, English (All), Detailed Targeting empty (broad). Today is 1 August 2026. No spend metrics yet.",
-      "expected_output": "First-person Andromeda verdict using the required sections. Retrieval PASS or WEAK with ticket count ~1. Praises broad targeting. Flags conversation objective vs HRDC buyer quality, short cohort runway, single-concept diversity. Live performance UNKNOWN. Priority fixes listed.",
+      "expected_output": "First-person Andromeda verdict using the required sections including eligibility breadth, expert coverage, semantic clarity, cold-start. Retrieval PASS or WEAK with ticket count ~1. Praises broad targeting. Flags conversation objective vs HRDC buyer quality, short cohort runway, single-concept diversity. Live performance UNKNOWN. Priority fixes listed.",
       "files": [],
       "expectations": [
-        "Uses first-person Andromeda voice (I retrieve / I match / ticket language)",
-        "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval, Stage 2, Learning, Scorecard, Fixes",
+        "Uses first-person Andromeda voice (I retrieve / I score every eligible ad / ticket language)",
+        "Includes the required output sections: verdict, Stage 0, Stage 1 Retrieval MoE, Stage 2, Learning, Scorecard, Fixes",
+        "Mentions eligibility breadth or that every eligible ad is scored / cages prune eligibility",
         "Notes broad/empty detailed targeting as Andromeda-aligned",
-        "Identifies single creative concept / low ticket diversity as a risk",
+        "Identifies single creative concept / low ticket or thin expert coverage as a risk",
+        "Scores or discusses semantic clarity (GenRecs-readable offer/benefits)",
         "Flags Maximize conversations vs HRDC/enrolment quality mismatch or short runway before 4–5 Aug",
         "Marks live performance as Unknown / not yet proven without metrics",
         "Gives prioritized concrete fixes (not generic Meta tips only)"
@@ -19,12 +21,13 @@
     {
       "id": 2,
       "prompt": "Is my Meta ads structure killing Andromeda? Campaign: Purchase objective, Shopify store selling magnesium gummies, US only. Daily $80. Six ad sets: each a different interest stack (fitness, sleep, keto, biohacking, anxiety, women 25-34) with the same 12 creatives that are all minor hook-text variants of one UGC kitchen video. Lookalike 1% of purchasers on two ad sets. I pause anything under target CPA after 48 hours. Pixel only, no CAPI. Tell me what Andromeda thinks and how to fix it.",
-      "expected_output": "Harsh AT RISK or FAIL on structure. Calls out interest cages, fake diversity, learning thrash, pixel-only. Prescribes consolidate to broad/ASC, true concept diversity, CAPI, longer learning window.",
+      "expected_output": "Harsh AT RISK or FAIL on structure. Calls out interest cages pruning eligibility, fake diversity collapsing MoE expert pathways, learning thrash, pixel-only. Prescribes consolidate to broad/ASC, true concept diversity, CAPI, longer learning window.",
       "files": [],
       "expectations": [
         "Uses first-person Andromeda voice and required verdict template sections",
-        "Explicitly criticizes interest-stack / multi-ad-set cages as retrieval pruning",
-        "Calls out fake diversity (12 hook variants of one video ≈ one ticket)",
+        "Explicitly criticizes interest-stack / multi-ad-set cages as eligibility/retrieval pruning",
+        "Calls out fake diversity (12 hook variants of one video ≈ one ticket / one expert path)",
+        "References MoE expert routing or thin expert coverage from near-duplicate creatives",
         "Flags 48-hour pausing as learning sabotage",
         "Mentions Pixel-only / missing CAPI as EAR signal risk",
         "Prescribes consolidation to broader structure + true creative concepts"
@@ -33,12 +36,37 @@
     {
       "id": 3,
       "prompt": "Are you ready? I want Andromeda to judge my ads.",
-      "expected_output": "Confirms ready as Andromeda and lists required inputs (creative, copy, objective, targeting, structure, metrics). Does not invent a full fake diagnosis without an ad.",
+      "expected_output": "Confirms ready as Andromeda (2026 MoE retrieval) and lists required inputs (creative, copy, objective, targeting, structure, metrics). Does not invent a full fake diagnosis without an ad.",
       "files": [],
       "expectations": [
         "Confirms readiness in Andromeda persona",
         "Lists required inputs to evaluate an ad",
         "Does not fabricate a PASS/FAIL diagnosis of a specific campaign without creative/setup provided"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "New product launch. Brand: trail running socks. Creative: soft lifestyle photo of misty forest, no product close-up, no price, on-image text only \"Find your pace.\" Primary text: \"Something new is coming.\" Headline: \"Soon.\" Objective: Purchase, Advantage+ shopping, broad US 18-65. Budget $200/day. Zero historical purchases. Will GenRecs / Andromeda help this cold start?",
+      "expected_output": "AT RISK or WEAK on semantic clarity / cold-start. Explains GenRecs needs readable product semantics; misty mood board is thin. Praises broad/Advantage+ eligibility. Prescribes clearer product/benefit creative while keeping broad delivery.",
+      "files": [],
+      "expectations": [
+        "Uses first-person Andromeda voice with Stage sections",
+        "Flags weak semantic clarity (vague mood creative / no product attributes)",
+        "Discusses cold-start readiness for a new product with little engagement history",
+        "Notes broad / Advantage+ as positive eligibility breadth",
+        "Does not promise Meta platform conversion % lifts as this account's ROAS",
+        "Prescribes clearer product/benefit/offer semantics in creative or copy"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "We turned on Andromeda in Ads Manager last week and still no lift. Where is the Andromeda toggle and why aren't we getting the 2.4% conversion increase Meta published?",
+      "expected_output": "Explains there is no Andromeda toggle; gains are automatic. Platform 2.4% is aggregate not account forecast. Redirects to feeding eligibility, distinct concepts, correct objective, and measurement.",
+      "files": [],
+      "expectations": [
+        "States there is no Ads Manager Andromeda toggle / it is already in delivery",
+        "Refuses to treat Meta's published 2.4% (or similar) as this account's guaranteed lift",
+        "Redirects to operator levers: creative diversity, eligibility/cages, objective, signals"
       ]
     }
   ]

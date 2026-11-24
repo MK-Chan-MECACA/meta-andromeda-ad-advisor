@@ -6,6 +6,14 @@ import { Scorecard } from "@/components/Scorecard";
 import { FixesList } from "@/components/FixesList";
 import { IconCheck, IconX } from "@/components/Icons";
 
+const PIPELINE_STEPS = [
+  "Eligibility",
+  "Retrieval MoE",
+  "Ranking (GEM/Lattice)",
+  "Auction",
+  "Learning",
+] as const;
+
 function StageBlock({
   title,
   children,
@@ -73,6 +81,59 @@ function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function gradeTone(grade: string) {
+  if (grade === "PASS") return "text-pass";
+  if (grade === "WEAK") return "text-warn";
+  return "text-danger";
+}
+
+function PipelineStrip() {
+  return (
+    <ol
+      className="flex flex-wrap items-center gap-2 rounded-2xl border border-ink-700 bg-ink-900/40 px-4 py-3"
+      aria-label="Andromeda delivery pipeline"
+    >
+      {PIPELINE_STEPS.map((step, i) => (
+        <li key={step} className="flex items-center gap-2">
+          {i > 0 ? (
+            <span className="text-ink-600" aria-hidden>
+              →
+            </span>
+          ) : null}
+          <span className="rounded-lg border border-meta/25 bg-meta/10 px-2.5 py-1 font-display text-[11px] tracking-wide text-meta-bright uppercase">
+            {step}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function SourcesNote() {
+  return (
+    <details className="rounded-2xl border border-ink-700 bg-ink-900/30 px-5 py-4">
+      <summary className="cursor-pointer font-display text-sm tracking-wide text-ink-100 uppercase">
+        How I reason (sources)
+      </summary>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ink-400">
+        <li>
+          Meta Engineering — Andromeda Retrieval MoE / fused GPU pipeline (28
+          Oct 2026)
+        </li>
+        <li>Meta Engineering — GEM central ads model (13 Oct 2026)</li>
+        <li>
+          Meta Business — GenRecs semantic retrieval + ranking explainers (28
+          Oct 2026)
+        </li>
+        <li>
+          Reverse-engineered from published posts only — no private weights or
+          account-level platform % forecasts
+        </li>
+      </ul>
+    </details>
+  );
+}
+
 export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
   const { retrieval, ranking, learning, eligibility, scorecard } = analysis;
 
@@ -92,6 +153,8 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
         bottomLine={analysis.bottomLine}
       />
 
+      <PipelineStrip />
+
       <div className="space-y-3">
         <h3 className="font-display text-lg text-ink-50">Scorecard</h3>
         <Scorecard scorecard={scorecard} />
@@ -105,6 +168,34 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
         <div className="space-y-3">
           <h3 className="font-display text-lg text-danger">What went wrong</h3>
           <BulletList items={analysis.whatWentWrong} tone="bad" />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="font-display text-lg text-ink-50">2026 retrieval signals</h3>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StageBlock title="Eligibility breadth">
+            <p>{eligibility.eligibilityBreadth}</p>
+          </StageBlock>
+          <StageBlock title="Expert coverage">
+            <p>{retrieval.expertCoverage}</p>
+          </StageBlock>
+          <StageBlock title="Semantic clarity">
+            <MetaRow
+              label="Grade"
+              value={
+                <span
+                  className={`font-display ${gradeTone(retrieval.semanticClarity.grade)}`}
+                >
+                  {retrieval.semanticClarity.grade}
+                </span>
+              }
+            />
+            <p>{retrieval.semanticClarity.note}</p>
+          </StageBlock>
+          <StageBlock title="Cold-start readiness">
+            <p>{retrieval.coldStartReadiness}</p>
+          </StageBlock>
         </div>
       </div>
 
@@ -124,7 +215,7 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
             )}
           </StageBlock>
 
-          <StageBlock title="Stage 1 — Retrieval (ticket)">
+          <StageBlock title="Stage 1 — Retrieval MoE (ticket)">
             <MetaRow label="Semantic node" value={retrieval.semanticNode} />
             <MetaRow
               label="Ticket count"
@@ -139,7 +230,7 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
             <MetaRow
               label="Grade"
               value={
-                <span className="font-display text-meta-bright">
+                <span className={`font-display ${gradeTone(retrieval.grade)}`}>
                   {retrieval.grade}
                 </span>
               }
@@ -178,6 +269,8 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
           </ul>
         </div>
       ) : null}
+
+      <SourcesNote />
     </section>
   );
 }
