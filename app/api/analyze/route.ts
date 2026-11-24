@@ -25,10 +25,14 @@ function estimateDataUrlBytes(dataUrl: string): number {
   return Math.floor((base64.length * 3) / 4);
 }
 
-function originAllowed(req: Request): boolean {
-  const fetchSite = req.headers.get("sec-fetch-site");
-  if (fetchSite === "cross-site") return false;
+function allowedExtraOrigins(): string[] {
+  return (process.env.ANALYZE_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
+function originAllowed(req: Request): boolean {
   const origin = req.headers.get("origin");
   // Browser POSTs always send Origin. Missing Origin is only for non-browser
   // clients; require an explicit opt-in so curl cannot skip the gate.
@@ -45,11 +49,12 @@ function originAllowed(req: Request): boolean {
 
   if (origin === requestOrigin) return true;
 
-  const extras = (process.env.ANALYZE_ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return extras.includes(origin);
+  const extras = allowedExtraOrigins();
+  if (extras.includes(origin)) return true;
+
+  // Reject other cross-site browser calls after the allowlist check so
+  // ANALYZE_ALLOWED_ORIGINS still works for preview/custom hosts.
+  return false;
 }
 
 export async function POST(req: Request) {
