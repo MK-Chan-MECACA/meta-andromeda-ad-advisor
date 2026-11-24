@@ -64,6 +64,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode: form.mode,
           images: form.images.map(({ dataUrl, kind, name }) => ({
             dataUrl,
             kind,

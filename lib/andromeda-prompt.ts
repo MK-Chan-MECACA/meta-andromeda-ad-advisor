@@ -25,16 +25,23 @@ export const ANDROMEDA_SYSTEM_PROMPT = `You are Meta Andromeda — Stage 1 perso
 ## Anti-patterns to call out when present
 Interest stacks / many LALs as primary strategy; age/gender/ad-set splits that starve learning; fake diversity (crop, headline color, minor hook); pausing losers inside 48h of learning; optimizing Link Click when goal is purchase/enrolment; daily bid/budget thrash; Pixel-only / low EMQ while blaming the algorithm; treating Meta's published % lifts as this account's ROAS.
 
+## Portfolio / diversity (always fill portfolio object)
+- mode=single → one primary concept; still fill diversityMatrix + one cluster.
+- mode=portfolio or multiple creatives → score Format × Persona × Environment × Benefit; cluster near-duplicates; set trueTicketCount after collapse; list collapsedDuplicates.
+- Fake diversity (crop/CTA/hook swaps) = same ticket. True diversification unlocks more MoE expert pathways.
+- retrieval.ticketCount should match portfolio.trueTicketCount when analyzing a portfolio.
+
 ## Output rules
-- Fill the structured schema completely, including expertCoverage, semanticClarity, coldStartReadiness, and eligibilityBreadth.
+- Fill the structured schema completely, including expertCoverage, semanticClarity, coldStartReadiness, eligibilityBreadth, and portfolio.
 - whatWentWell and whatWentWrong must be concrete and operator-facing.
-- fixes must be priority-ordered; each why must cite tickets / experts / semantic clarity / EAR / quality / learning / eligibility.
+- fixes must be priority-ordered; each why must cite tickets / experts / semantic clarity / EAR / quality / learning / eligibility / diversity.
 - If images include Ads Manager screenshots, extract visible settings and metrics into your reasoning.
-- If creative images are present, judge thumb-stop, on-image text, semantic clarity, and congruence with copy/objective.
+- If creative images are present, judge thumb-stop, on-image text, semantic clarity, congruence, and similarity across creatives.
 - Meta/Facebook/Instagram ads only. Never invent competitor spend or private model access.
 - If asked to evade Meta policies, refuse and redirect to legitimate retrieval/auction alignment.`;
 
 export function buildUserAnalysisPrompt(payload: {
+  mode: "single" | "portfolio";
   copy: {
     primaryText: string;
     headline: string;
@@ -44,13 +51,18 @@ export function buildUserAnalysisPrompt(payload: {
   setup: Record<string, string>;
   metrics: Record<string, string>;
   imageLabels: string[];
+  creativeCount: number;
 }): string {
   const hasMetrics = Object.values(payload.metrics).some(
     (v) => typeof v === "string" && v.trim().length > 0,
   );
+  const effectiveMode =
+    payload.mode === "portfolio" || payload.creativeCount > 1
+      ? "portfolio"
+      : "single";
 
   return [
-    "Diagnose this Meta ad as Andromeda (2026 Retrieval MoE). Return the structured analysis.",
+    `Diagnose this Meta ad as Andromeda (2026 Retrieval MoE). Analysis mode: ${effectiveMode}. Return the structured analysis including the portfolio object.`,
     "",
     "## Ad copy",
     `Primary text: ${payload.copy.primaryText || "(none)"}`,
@@ -72,7 +84,10 @@ export function buildUserAnalysisPrompt(payload: {
     "",
     "## Attached images",
     payload.imageLabels.length
-      ? payload.imageLabels.map((l, i) => `${i + 1}. ${l}`).join("\n")
+      ? [
+          `${payload.creativeCount} creative(s) attached — cluster similar ones; score diversity matrix.`,
+          ...payload.imageLabels.map((l, i) => `${i + 1}. ${l}`),
+        ].join("\n")
       : "No images attached.",
   ].join("\n");
 }

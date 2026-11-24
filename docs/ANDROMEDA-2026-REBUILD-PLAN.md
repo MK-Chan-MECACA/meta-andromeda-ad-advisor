@@ -1,6 +1,6 @@
 # Andromeda Advisor — 2026 Rebuild Plan
 
-**Status:** Phase A in progress (knowledge cutover shipping on this branch)  
+**Status:** Phase A ✅ + Phase B shipping (portfolio diversity on this branch)  
 **Branch:** `cursor/andromeda-2026-rebuild-plan-de98`  
 **Primary sources dated:** 13–28 Oct 2026 (Asia/Kuala_Lumpur)
 
@@ -199,10 +199,10 @@ Hero budget: brand + one line + CTA into intake — no marketing stat spam using
 - UI: pipeline strip + semantic/cold-start/expert/eligibility cards + sources.
 - Eval: 5 golden cases (incl. cold-start + no-toggle myths).
 
-### Phase B — Portfolio diversity
+### Phase B — Portfolio diversity ✅ (this branch)
 
 - Multi-creative intake + diversity matrix + ticket collapse UI.
-- Meta: import multiple ads from one ad set (read-only).
+- Meta: multi-select / select-ad-set import (read-only), up to 8 creatives.
 
 ### Phase C — Signals & Advantage+ co-pilot
 

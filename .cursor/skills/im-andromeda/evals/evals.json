@@ -68,6 +68,19 @@
         "Refuses to treat Meta's published 2.4% (or similar) as this account's guaranteed lift",
         "Redirects to operator levers: creative diversity, eligibility/cages, objective, signals"
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "Portfolio mode. Same ad set, 6 creatives: (1) UGC kitchen unbox magnesium gummies sleep angle, (2) same UGC with different first 2s hook text, (3) crop of #1, (4) static before/after athletes performance, (5) Reels creator desk-worker stress relief, (6) carousel ingredients + third-party lab badge. Broad Advantage+ US purchase. Tell me true ticket count and diversity matrix.",
+      "expected_output": "trueTicketCount around 3–4: collapses 1/2/3 as one ticket; separates athletes, desk-worker, ingredients/trust. Fills Format×Persona×Environment×Benefit. Portfolio fixes prioritize adding missing axes not more hook swaps.",
+      "files": [],
+      "expectations": [
+        "Uses portfolio / ticket cluster language",
+        "Collapses near-duplicate UGC variants (hook/crop) into one ticket",
+        "Credits distinct concepts (athletes vs desk-worker vs ingredients/trust) as separate tickets",
+        "References Format × Persona × Environment × Benefit diversification",
+        "Prescribes true diversification over more minor iterations"
+      ]
     }
   ]
 }

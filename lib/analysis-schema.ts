@@ -98,12 +98,69 @@ export const analysisResultSchema = z.object({
     )
     .min(1)
     .max(8),
+  portfolio: z.object({
+    mode: z
+      .enum(["single", "portfolio"])
+      .describe("single when one concept; portfolio when multiple creatives analyzed"),
+    trueTicketCount: z
+      .number()
+      .int()
+      .min(0)
+      .describe("Distinct retrieval tickets after collapsing near-duplicates"),
+    summary: z
+      .string()
+      .describe("Operator-facing ticket map: what collapses vs what stands alone"),
+    diversityMatrix: z.object({
+      format: z
+        .string()
+        .describe("Formats present / missing (static, UGC, Reels, carousel…)"),
+      persona: z
+        .string()
+        .describe("Personas / audiences spoken to"),
+      environment: z
+        .string()
+        .describe("Settings / contexts shown"),
+      benefit: z
+        .string()
+        .describe("Distinct benefits / offers / angles"),
+      grade: letterGradeSchema.describe(
+        "True diversification grade across Format × Persona × Environment × Benefit",
+      ),
+    }),
+    clusters: z
+      .array(
+        z.object({
+          label: z.string().describe("Cluster / concept name"),
+          members: z
+            .array(z.string())
+            .min(1)
+            .max(12)
+            .describe("Creative names or labels in this cluster"),
+          isDistinctTicket: z
+            .boolean()
+            .describe("true if this cluster earns its own retrieval ticket"),
+          note: z.string(),
+        }),
+      )
+      .min(1)
+      .max(12),
+    collapsedDuplicates: z
+      .array(z.string())
+      .max(12)
+      .describe(
+        "Near-duplicate pairs/groups that collapse to one ticket; empty if none",
+      ),
+  }),
   missingInputs: z
     .array(z.string())
     .describe("What would sharpen the diagnosis; empty if nothing missing"),
 });
 
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
+
+export const MAX_IMAGES = 12;
+export const MAX_CREATIVE_IMAGES = 8;
+export const MAX_SCREENSHOT_IMAGES = 3;
 
 const imageInputSchema = z.object({
   dataUrl: z.string().regex(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i),
@@ -139,6 +196,12 @@ const setupSchema = z
     placements: z.string().max(300).optional().default(""),
     adsInAdSet: z.string().max(50).optional().default(""),
     campaignType: z.string().max(200).optional().default(""),
+    portfolioNotes: z
+      .string()
+      .max(4000)
+      .optional()
+      .default("")
+      .describe("Optional per-creative descriptions when analyzing a portfolio"),
   })
   .default({
     objective: "",
@@ -150,6 +213,7 @@ const setupSchema = z
     placements: "",
     adsInAdSet: "",
     campaignType: "",
+    portfolioNotes: "",
   });
 
 const metricsSchema = z
@@ -175,7 +239,8 @@ const metricsSchema = z
   });
 
 export const analyzeRequestSchema = z.object({
-  images: z.array(imageInputSchema).max(3).default([]),
+  mode: z.enum(["single", "portfolio"]).default("single"),
+  images: z.array(imageInputSchema).max(MAX_IMAGES).default([]),
   copy: copySchema,
   setup: setupSchema,
   metrics: metricsSchema,

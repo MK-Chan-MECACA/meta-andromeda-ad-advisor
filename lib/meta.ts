@@ -313,6 +313,7 @@ export function mapAdToIntake(
     .join(" · ");
 
   return {
+    mode: "single" as const,
     copy: { ...base.copy, ...creativeCopy(ad.creative) },
     setup: {
       objective: campaign.objective ?? "",
@@ -335,6 +336,7 @@ export function mapAdToIntake(
       ]
         .filter(Boolean)
         .join(" · "),
+      portfolioNotes: "",
     },
     metrics: {
       spend: insights?.spend ? `${currency} ${insights.spend}` : "",

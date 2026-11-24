@@ -4,6 +4,7 @@ import type { AnalysisResult } from "@/lib/analysis-schema";
 import { VerdictBanner } from "@/components/VerdictBanner";
 import { Scorecard } from "@/components/Scorecard";
 import { FixesList } from "@/components/FixesList";
+import { DiversityMatrix } from "@/components/DiversityMatrix";
 import { IconCheck, IconX } from "@/components/Icons";
 
 const PIPELINE_STEPS = [
@@ -170,6 +171,8 @@ export function ResultsDashboard({ analysis }: { analysis: AnalysisResult }) {
           <BulletList items={analysis.whatWentWrong} tone="bad" />
         </div>
       </div>
+
+      <DiversityMatrix portfolio={analysis.portfolio} />
 
       <div className="space-y-3">
         <h3 className="font-display text-lg text-ink-50">2026 retrieval signals</h3>

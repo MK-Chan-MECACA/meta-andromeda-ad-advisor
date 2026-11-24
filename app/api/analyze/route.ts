@@ -71,16 +71,19 @@ export async function POST(req: Request) {
     );
   }
 
+  const creatives = data.images.filter((img) => img.kind === "creative");
   const imageLabels = data.images.map(
     (img, i) =>
       `${img.kind === "screenshot" ? "Ads Manager screenshot" : "Creative"} ${i + 1}${img.name ? ` (${img.name})` : ""}`,
   );
 
   const userText = buildUserAnalysisPrompt({
+    mode: data.mode,
     copy: data.copy,
     setup: data.setup,
     metrics: data.metrics,
     imageLabels,
+    creativeCount: creatives.length,
   });
 
   const content: Array<

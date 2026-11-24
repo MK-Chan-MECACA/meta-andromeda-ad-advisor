@@ -7,9 +7,10 @@ Diagnostic tool UI — not a marketing landing page. Prioritize clarity, progres
 
 ## Layout
 - Compact hero: brand chip + ANDROMEDA + one supporting line (MoE / eligible-ad framing)
+- Mode toggle on Assets: Single ad | Portfolio (diversity matrix)
 - Glass intake shell with 4-step wizard (Assets → Copy → Setup → Metrics)
 - Results appear below after analyze; auto-scroll to verdict
-- Results include pipeline strip (Eligibility → Retrieval MoE → Ranking → Auction → Learning), 2026 signal cards (eligibility breadth, expert coverage, semantic clarity, cold-start), and collapsed sources
+- Results include pipeline strip, diversity matrix + ticket clusters, 2026 signal cards, and collapsed sources
 
 ## Color (dark primary)
 | Role | Hex |

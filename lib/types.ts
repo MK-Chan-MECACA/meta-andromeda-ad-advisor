@@ -9,7 +9,10 @@ export type ClientImage = {
   dataUrl: string;
 };
 
+export type AnalysisMode = "single" | "portfolio";
+
 export type IntakeFormState = {
+  mode: AnalysisMode;
   images: ClientImage[];
   copy: {
     primaryText: string;
@@ -27,6 +30,7 @@ export type IntakeFormState = {
     placements: string;
     adsInAdSet: string;
     campaignType: string;
+    portfolioNotes: string;
   };
   metrics: {
     spend: string;
@@ -41,6 +45,7 @@ export type IntakeFormState = {
 };
 
 export const emptyIntakeForm = (): IntakeFormState => ({
+  mode: "single",
   images: [],
   copy: {
     primaryText: "",
@@ -58,6 +63,7 @@ export const emptyIntakeForm = (): IntakeFormState => ({
     placements: "",
     adsInAdSet: "",
     campaignType: "",
+    portfolioNotes: "",
   },
   metrics: {
     spend: "",
