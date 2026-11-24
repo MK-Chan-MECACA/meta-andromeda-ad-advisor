@@ -15,6 +15,7 @@ export function useIntakeDraft() {
   const [imagesOmitted, setImagesOmitted] = useState(false);
   const [ready, setReady] = useState(false);
   const skipNextSave = useRef(false);
+  const imagesOmittedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,6 +23,10 @@ export function useIntakeDraft() {
       if (cancelled) return;
       const draft = loadIntakeDraft();
       if (draft) {
+        // Avoid immediate re-save of hydrated state (would drop imagesOmitted
+        // once form.images is already empty after a quota omit).
+        skipNextSave.current = true;
+        imagesOmittedRef.current = draft.imagesOmitted;
         setFormState(draft.form);
         setSavedAt(draft.savedAt || null);
         setImagesOmitted(draft.imagesOmitted);
@@ -40,11 +45,15 @@ export function useIntakeDraft() {
       return;
     }
     const t = window.setTimeout(() => {
-      const result = saveIntakeDraft(form);
+      const result = saveIntakeDraft(form, {
+        hadImagesOmitted: imagesOmittedRef.current,
+      });
       if (result.saved) {
+        imagesOmittedRef.current = result.imagesOmitted;
         setSavedAt(new Date().toISOString());
         setImagesOmitted(result.imagesOmitted);
       } else {
+        imagesOmittedRef.current = false;
         setSavedAt(null);
         setImagesOmitted(false);
       }
@@ -58,6 +67,7 @@ export function useIntakeDraft() {
 
   const clearDraft = useCallback(() => {
     skipNextSave.current = true;
+    imagesOmittedRef.current = false;
     clearIntakeDraft();
     setFormState(emptyIntakeForm());
     setSavedAt(null);

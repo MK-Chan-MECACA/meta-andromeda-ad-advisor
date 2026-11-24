@@ -26,8 +26,15 @@ function estimateDataUrlBytes(dataUrl: string): number {
 }
 
 function originAllowed(req: Request): boolean {
+  const fetchSite = req.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") return false;
+
   const origin = req.headers.get("origin");
-  if (!origin) return true; // non-browser clients still hit rate limits
+  // Browser POSTs always send Origin. Missing Origin is only for non-browser
+  // clients; require an explicit opt-in so curl cannot skip the gate.
+  if (!origin) {
+    return process.env.ANALYZE_ALLOW_MISSING_ORIGIN === "1";
+  }
 
   let requestOrigin: string;
   try {

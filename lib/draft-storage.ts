@@ -29,36 +29,52 @@ function isEmptyForm(form: IntakeFormState): boolean {
 }
 
 /** Persist intake; keep image payloads when possible, drop only on quota pressure. */
-export function saveIntakeDraft(form: IntakeFormState): {
+export function saveIntakeDraft(
+  form: IntakeFormState,
+  opts?: { hadImagesOmitted?: boolean },
+): {
   saved: boolean;
   imagesOmitted: boolean;
 } {
-  if (isEmptyForm(form)) {
+  const hadImagesOmitted = Boolean(opts?.hadImagesOmitted);
+
+  // Image-only drafts that already dropped images still look "empty" — keep them
+  // so the UI can keep showing the quota warning until the operator clears.
+  if (isEmptyForm(form) && !hadImagesOmitted) {
     clearIntakeDraft();
     return { saved: false, imagesOmitted: false };
   }
 
   try {
-    const withImages: StoredDraft = {
-      savedAt: new Date().toISOString(),
-      form,
-      imagesOmitted: false,
-    };
-    const full = JSON.stringify(withImages);
-    try {
-      localStorage.setItem(INTAKE_DRAFT_KEY, full);
-      return { saved: true, imagesOmitted: false };
-    } catch {
-      /* quota — fall through without images */
+    if (form.images.length > 0) {
+      const withImages: StoredDraft = {
+        savedAt: new Date().toISOString(),
+        form,
+        imagesOmitted: false,
+      };
+      try {
+        localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(withImages));
+        return { saved: true, imagesOmitted: false };
+      } catch {
+        /* quota — fall through without images */
+      }
+
+      const withoutImages: StoredDraft = {
+        savedAt: new Date().toISOString(),
+        form: { ...form, images: [] },
+        imagesOmitted: true,
+      };
+      localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(withoutImages));
+      return { saved: true, imagesOmitted: true };
     }
 
-    const withoutImages: StoredDraft = {
+    const textOnly: StoredDraft = {
       savedAt: new Date().toISOString(),
       form: { ...form, images: [] },
-      imagesOmitted: form.images.length > 0,
+      imagesOmitted: hadImagesOmitted,
     };
-    localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(withoutImages));
-    return { saved: true, imagesOmitted: form.images.length > 0 };
+    localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(textOnly));
+    return { saved: true, imagesOmitted: hadImagesOmitted };
   } catch {
     return { saved: false, imagesOmitted: false };
   }

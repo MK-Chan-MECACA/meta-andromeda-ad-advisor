@@ -251,9 +251,20 @@ export function MetaImportPanel({
           ]
         : [];
 
+      const nextImages = composeImages(form.images, imported);
+      const creativeCount = nextImages.filter((i) => i.kind === "creative").length;
+      // One-ad import without a downloadable image must not force single mode
+      // when existing multi-creative intake is preserved.
+      const nextMode =
+        creativeCount > 1
+          ? "portfolio"
+          : imported.length > 0
+            ? "single"
+            : form.mode;
+
       onChange({
-        mode: "single",
-        images: composeImages(form.images, imported),
+        mode: nextMode,
+        images: nextImages,
         copy: data.copy,
         setup: { ...data.setup, portfolioNotes: data.setup.portfolioNotes ?? "" },
         metrics: data.metrics,

@@ -4,7 +4,10 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
-/** Best-effort in-memory sliding window. Fine for single-instance / warm lambdas. */
+/**
+ * Best-effort in-memory sliding window.
+ * Per-isolate only on Vercel — pair with Origin gate; use KV for global caps.
+ */
 export function takeRateLimitToken(
   key: string,
   limit: number,
