@@ -9,45 +9,77 @@ export const INTAKE_DRAFT_KEY = "andromeda.intake.draft.v1";
 type StoredDraft = {
   savedAt: string;
   form: IntakeFormState;
+  /** True when images were omitted to fit localStorage quota. */
+  imagesOmitted?: boolean;
 };
 
-/** Persist intake without huge base64 images if over ~1.5MB JSON. */
-export function saveIntakeDraft(form: IntakeFormState): void {
+function isEmptyForm(form: IntakeFormState): boolean {
+  const hasCopy = Object.values(form.copy).some((v) => v.trim());
+  const hasSetup = Object.values(form.setup).some((v) => v.trim());
+  const hasMetrics = Object.values(form.metrics).some((v) => v.trim());
+  const hasSignals = Object.values(form.signals).some((v) => v.trim());
+  return (
+    !form.images.length &&
+    !hasCopy &&
+    !hasSetup &&
+    !hasMetrics &&
+    !hasSignals &&
+    form.mode === "single"
+  );
+}
+
+/** Persist intake; keep image payloads when possible, drop only on quota pressure. */
+export function saveIntakeDraft(form: IntakeFormState): {
+  saved: boolean;
+  imagesOmitted: boolean;
+} {
+  if (isEmptyForm(form)) {
+    clearIntakeDraft();
+    return { saved: false, imagesOmitted: false };
+  }
+
   try {
-    const slim: IntakeFormState = {
-      ...form,
-      images: form.images.map((img) => ({
-        ...img,
-        // Keep metadata; drop payload if oversized draft
-        dataUrl: img.dataUrl.length > 200_000 ? "" : img.dataUrl,
-      })),
-    };
-    const payload: StoredDraft = {
+    const withImages: StoredDraft = {
       savedAt: new Date().toISOString(),
-      form: slim,
+      form,
+      imagesOmitted: false,
     };
-    const json = JSON.stringify(payload);
-    if (json.length > 1_500_000) {
-      payload.form = { ...slim, images: [] };
+    const full = JSON.stringify(withImages);
+    try {
+      localStorage.setItem(INTAKE_DRAFT_KEY, full);
+      return { saved: true, imagesOmitted: false };
+    } catch {
+      /* quota — fall through without images */
     }
-    localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(payload));
+
+    const withoutImages: StoredDraft = {
+      savedAt: new Date().toISOString(),
+      form: { ...form, images: [] },
+      imagesOmitted: form.images.length > 0,
+    };
+    localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify(withoutImages));
+    return { saved: true, imagesOmitted: form.images.length > 0 };
   } catch {
-    /* quota / private mode */
+    return { saved: false, imagesOmitted: false };
   }
 }
 
 export function loadIntakeDraft(): {
   form: IntakeFormState;
   savedAt: string;
+  imagesOmitted: boolean;
 } | null {
   try {
     const raw = localStorage.getItem(INTAKE_DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredDraft;
     if (!parsed?.form || typeof parsed.form !== "object") return null;
+    const form = mergeWithEmpty(parsed.form);
+    if (isEmptyForm(form) && !parsed.imagesOmitted) return null;
     return {
-      form: mergeWithEmpty(parsed.form),
+      form,
       savedAt: parsed.savedAt ?? "",
+      imagesOmitted: Boolean(parsed.imagesOmitted),
     };
   } catch {
     return null;

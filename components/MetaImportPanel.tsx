@@ -23,7 +23,7 @@ type AdRow = {
   campaign?: { id?: string; name?: string; objective?: string };
 };
 
-/** Screenshots capped; creatives replaced by imports (never exceed creative cap). */
+/** Screenshots capped; creatives replaced by imports when present (never exceed creative cap). */
 function composeImages(
   existing: ClientImage[],
   importedCreatives: ClientImage[],
@@ -31,10 +31,32 @@ function composeImages(
   const screenshots = existing
     .filter((i) => i.kind === "screenshot")
     .slice(0, MAX_SCREENSHOT_IMAGES);
-  const creatives = importedCreatives
+  const imported = importedCreatives
     .filter((i) => i.kind === "creative" && i.dataUrl)
     .slice(0, MAX_CREATIVE_IMAGES);
+  // Empty import (no downloadable image) must not wipe existing creatives.
+  const creatives = imported.length
+    ? imported
+    : existing
+        .filter((i) => i.kind === "creative")
+        .slice(0, MAX_CREATIVE_IMAGES);
   return [...screenshots, ...creatives];
+}
+
+/** Prefer existing operator-entered signal values over blank Meta defaults. */
+function mergeSignals(
+  existing: IntakeFormState["signals"],
+  incoming?: IntakeFormState["signals"],
+): IntakeFormState["signals"] {
+  if (!incoming) return existing;
+  const next = { ...existing };
+  for (const key of Object.keys(incoming) as (keyof typeof incoming)[]) {
+    const value = incoming[key];
+    if (typeof value === "string" && value.trim()) {
+      next[key] = value;
+    }
+  }
+  return next;
 }
 
 type ImportResponse = Omit<IntakeFormState, "images"> & {
@@ -235,10 +257,7 @@ export function MetaImportPanel({
         copy: data.copy,
         setup: { ...data.setup, portfolioNotes: data.setup.portfolioNotes ?? "" },
         metrics: data.metrics,
-        signals: {
-          ...form.signals,
-          ...data.signals,
-        },
+        signals: mergeSignals(form.signals, data.signals),
       });
     } catch {
       setError("Import failed.");
@@ -316,10 +335,7 @@ export function MetaImportPanel({
             .filter(Boolean)
             .join(" · "),
         },
-        signals: {
-          ...form.signals,
-          ...primary.signals,
-        },
+        signals: mergeSignals(form.signals, primary.signals),
       });
       setSelected(new Set());
     } catch {

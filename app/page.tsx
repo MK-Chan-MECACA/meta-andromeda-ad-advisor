@@ -48,7 +48,7 @@ function AnalyzingState() {
 }
 
 export default function Home() {
-  const { form, setForm, savedAt, clearDraft } = useIntakeDraft();
+  const { form, setForm, savedAt, imagesOmitted, clearDraft } = useIntakeDraft();
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export default function Home() {
     ? `Draft saved ${new Date(savedAt).toLocaleString(undefined, {
         dateStyle: "short",
         timeStyle: "short",
-      })}`
+      })}${imagesOmitted ? " · images not stored (quota)" : ""}`
     : null;
 
   return (
