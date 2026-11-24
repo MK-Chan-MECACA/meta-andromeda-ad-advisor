@@ -80,20 +80,8 @@ export async function POST(req: Request) {
   }
 
   const ip = clientIp(req);
-  const limit = Number.isFinite(RATE_LIMIT) && RATE_LIMIT > 0 ? RATE_LIMIT : 5;
-  const token = takeRateLimitToken(`analyze:${ip}`, limit, RATE_WINDOW_MS);
-  if (!token.ok) {
-    return NextResponse.json(
-      {
-        error: "Too many analyses from this IP. Try again shortly.",
-      },
-      {
-        status: 429,
-        headers: { "Retry-After": String(token.retryAfterSec) },
-      },
-    );
-  }
 
+  // Acquire concurrency first so a full slot does not burn per-IP quota.
   const slot = tryAcquireInFlight(MAX_IN_FLIGHT);
   if (!slot.ok) {
     return NextResponse.json(
@@ -101,6 +89,21 @@ export async function POST(req: Request) {
       {
         status: 429,
         headers: { "Retry-After": String(slot.retryAfterSec) },
+      },
+    );
+  }
+
+  const limit = Number.isFinite(RATE_LIMIT) && RATE_LIMIT > 0 ? RATE_LIMIT : 5;
+  const token = takeRateLimitToken(`analyze:${ip}`, limit, RATE_WINDOW_MS);
+  if (!token.ok) {
+    releaseInFlight();
+    return NextResponse.json(
+      {
+        error: "Too many analyses from this IP. Try again shortly.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(token.retryAfterSec) },
       },
     );
   }
